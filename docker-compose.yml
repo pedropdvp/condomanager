@@ -1,0 +1,41 @@
+# Stack completa (app + MySQL) para correr o perfil de producao localmente.
+# Uso:  docker compose up --build   ->  http://localhost:8080
+services:
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: condomanager
+      MYSQL_USER: condomanager
+      MYSQL_PASSWORD: condomanager
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - condo_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: ./condomanager
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: condomanager
+      DB_USER: condomanager
+      DB_PASSWORD: condomanager
+      # Em producao real, gere um segredo proprio com >= 32 bytes
+      CONDO_JWT_SECRET: "troque-esta-chave-secreta-com-pelo-menos-32-bytes!!"
+      # Origens permitidas para o frontend (CORS)
+      CONDO_CORS_ORIGINS: "https://pedropdvp.github.io,http://localhost:8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  condo_db:

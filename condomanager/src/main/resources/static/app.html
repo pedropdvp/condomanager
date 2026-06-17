@@ -94,8 +94,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="config.js"></script>
 <script>
 // ===== Autenticação =====
+const API_BASE = window.CONDO_API_BASE || '';
 const token = localStorage.getItem('token');
 if (!token) window.location.href = 'index.html';
 document.getElementById('utilizadorInfo').textContent =
@@ -105,7 +107,7 @@ function sair() { localStorage.clear(); window.location.href = 'index.html'; }
 
 async function api(path, opts = {}) {
     opts.headers = Object.assign({ 'Authorization': 'Bearer ' + token }, opts.headers || {});
-    const resp = await fetch(path, opts);
+    const resp = await fetch(API_BASE + path, opts);
     if (resp.status === 401 || resp.status === 403) {
         if (path !== '/api/dashboard') mostrarAlerta('Sem permissão ou sessão expirada.', 'warning');
         if (resp.status === 401) { sair(); }
@@ -360,7 +362,7 @@ async function carregarMatriz() {
     if (matrizPermissoes) return true;
     try {
         // fetch direto (sem o wrapper api()) para não disparar alerta a quem não tem permissão
-        const resp = await fetch('/api/permissoes', { headers: { 'Authorization': 'Bearer ' + token } });
+        const resp = await fetch(API_BASE + '/api/permissoes', { headers: { 'Authorization': 'Bearer ' + token } });
         if (resp.ok) { matrizPermissoes = await resp.json(); return true; }
     } catch (e) { /* sem permissão ou erro de ligação */ }
     return false;

@@ -184,7 +184,9 @@
     </section>
 </div>
 
+<script src="config.js"></script>
 <script>
+    const API_BASE = window.CONDO_API_BASE || '';
     if (localStorage.getItem('token')) {
         window.location.href = 'app.html';
     }
@@ -193,7 +195,7 @@
         const out = document.getElementById('resultado');
         out.innerHTML = '<span class="text-muted">A autenticar...</span>';
         try {
-            const resp = await fetch('/api/auth/login', {
+            const resp = await fetch(API_BASE + '/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
