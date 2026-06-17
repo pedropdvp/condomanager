@@ -2,9 +2,13 @@ package com.condomanager.controller;
 
 import com.condomanager.dto.LoginRequest;
 import com.condomanager.dto.LoginResponse;
+import com.condomanager.dto.RegistoRequest;
+import com.condomanager.dto.RegistoResponse;
 import com.condomanager.service.AuthService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,5 +24,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest pedido) {
         return ResponseEntity.ok(authService.autenticar(pedido));
+    }
+
+    /** Criacao de um novo acesso. Restrito a quem gere utilizadores (ADMIN_SISTEMA, GESTOR). */
+    @PostMapping("/registo")
+    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR')")
+    public ResponseEntity<RegistoResponse> registar(@Valid @RequestBody RegistoRequest pedido) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registar(pedido));
     }
 }

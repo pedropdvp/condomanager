@@ -45,7 +45,7 @@ public class CondominioController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO')")
     public ResponseEntity<Void> apagar(@PathVariable Long id) {
         service.apagar(id);
         return ResponseEntity.noContent().build();

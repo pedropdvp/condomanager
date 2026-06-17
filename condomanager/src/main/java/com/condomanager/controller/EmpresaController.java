@@ -45,7 +45,7 @@ public class EmpresaController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN_SISTEMA')")
+    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR')")
     public ResponseEntity<Void> apagar(@PathVariable Long id) {
         service.apagar(id);
         return ResponseEntity.noContent().build();

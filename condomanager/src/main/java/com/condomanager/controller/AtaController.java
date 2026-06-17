@@ -51,7 +51,7 @@ public class AtaController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO')")
     public ResponseEntity<Void> apagar(@PathVariable Long id) {
         service.apagar(id);
         return ResponseEntity.noContent().build();
