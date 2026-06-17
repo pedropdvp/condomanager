@@ -21,19 +21,20 @@ public class MensagemController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('MENSAGENS','CONSULTAR')")
     public List<MensagemDTO> listar() {
         return service.listar();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('MENSAGENS','CONSULTAR')")
     public MensagemDTO obter(@PathVariable Long id) {
         return service.obter(id);
     }
 
+    /** Enviar (criar) mensagem. O nivel "Recebe" da matriz so concede CONSULTAR, logo nao envia. */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissoes.pode('MENSAGENS','CRIAR')")
     public ResponseEntity<MensagemDTO> enviar(@Valid @RequestBody MensagemDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.enviar(dto));
     }

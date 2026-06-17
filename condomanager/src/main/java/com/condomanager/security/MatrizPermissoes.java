@@ -1,12 +1,15 @@
 package com.condomanager.security;
 
+import com.condomanager.model.enums.Acao;
 import com.condomanager.model.enums.Funcionalidade;
 import com.condomanager.model.enums.NivelAcesso;
 import com.condomanager.model.enums.NomePerfil;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 import static com.condomanager.model.enums.NivelAcesso.*;
 import static com.condomanager.model.enums.NomePerfil.*;
@@ -60,5 +63,28 @@ public class MatrizPermissoes {
 
     public NivelAcesso nivel(Funcionalidade funcionalidade, NomePerfil perfil) {
         return matriz.get(funcionalidade).get(perfil);
+    }
+
+    /** Acoes padrao (pre-selecao dos interruptores) de um perfil numa funcionalidade. */
+    public Set<Acao> acoesPadrao(Funcionalidade funcionalidade, NomePerfil perfil) {
+        return acoesDoNivel(nivel(funcionalidade, perfil));
+    }
+
+    /**
+     * Converte um nivel da matriz no conjunto de acoes correspondente:
+     *   SIM -> todas; CONSULTA/PARTICIPA/RECEBE -> apenas CONSULTAR; NAO -> nenhuma.
+     * (Participar numa votacao e receber mensagens exigem, no minimo, CONSULTAR.)
+     */
+    public static Set<Acao> acoesDoNivel(NivelAcesso nivel) {
+        switch (nivel) {
+            case SIM:
+                return EnumSet.allOf(Acao.class);
+            case CONSULTA:
+            case PARTICIPA:
+            case RECEBE:
+                return EnumSet.of(Acao.CONSULTAR);
+            default:
+                return EnumSet.noneOf(Acao.class);
+        }
     }
 }

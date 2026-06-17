@@ -21,19 +21,19 @@ public class PagamentoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('PAGAMENTOS','CONSULTAR')")
     public List<PagamentoDTO> listar() {
         return service.listar();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('PAGAMENTOS','CONSULTAR')")
     public PagamentoDTO obter(@PathVariable Long id) {
         return service.obter(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR')")
+    @PreAuthorize("@permissoes.pode('PAGAMENTOS','CRIAR')")
     public ResponseEntity<PagamentoDTO> registar(@Valid @RequestBody PagamentoDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.registar(dto));
     }

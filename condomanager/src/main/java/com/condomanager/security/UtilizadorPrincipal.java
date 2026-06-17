@@ -1,6 +1,8 @@
 package com.condomanager.security;
 
 import com.condomanager.model.Utilizador;
+import com.condomanager.model.enums.Acao;
+import com.condomanager.model.enums.Funcionalidade;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,6 +28,11 @@ public class UtilizadorPrincipal implements UserDetails {
 
     public Long getEmpresaId() {
         return utilizador.getEmpresa() != null ? utilizador.getEmpresa().getId() : null;
+    }
+
+    /** Verifica uma permissao granular (Funcionalidade x Acao) deste utilizador. */
+    public boolean temPermissao(Funcionalidade funcionalidade, Acao acao) {
+        return utilizador.temPermissao(funcionalidade, acao);
     }
 
     @Override

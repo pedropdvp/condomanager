@@ -21,25 +21,25 @@ public class DocumentoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('DOCUMENTOS','CONSULTAR')")
     public List<DocumentoDTO> listar() {
         return service.listar();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('DOCUMENTOS','CONSULTAR')")
     public DocumentoDTO obter(@PathVariable Long id) {
         return service.obter(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissoes.pode('DOCUMENTOS','CRIAR')")
     public ResponseEntity<DocumentoDTO> registar(@Valid @RequestBody DocumentoDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.registar(dto));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissoes.pode('DOCUMENTOS','APAGAR')")
     public ResponseEntity<Void> apagar(@PathVariable Long id) {
         service.apagar(id);
         return ResponseEntity.noContent().build();

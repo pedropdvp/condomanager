@@ -1,5 +1,7 @@
 package com.condomanager.model;
 
+import com.condomanager.model.enums.Acao;
+import com.condomanager.model.enums.Funcionalidade;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,6 +40,14 @@ public class Utilizador {
     )
     private Set<Perfil> perfis = new HashSet<>();
 
+    /** Permissoes granulares (Funcionalidade x Acao) atribuidas a este utilizador. */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "utilizador_permissao",
+            joinColumns = @JoinColumn(name = "id_utilizador")
+    )
+    private Set<PermissaoAcesso> permissoes = new HashSet<>();
+
     public Utilizador() {
     }
 
@@ -61,4 +71,12 @@ public class Utilizador {
 
     public Set<Perfil> getPerfis() { return perfis; }
     public void setPerfis(Set<Perfil> perfis) { this.perfis = perfis; }
+
+    public Set<PermissaoAcesso> getPermissoes() { return permissoes; }
+    public void setPermissoes(Set<PermissaoAcesso> permissoes) { this.permissoes = permissoes; }
+
+    /** Indica se este utilizador tem a acao concedida sobre a funcionalidade. */
+    public boolean temPermissao(Funcionalidade funcionalidade, Acao acao) {
+        return permissoes.contains(new PermissaoAcesso(funcionalidade, acao));
+    }
 }

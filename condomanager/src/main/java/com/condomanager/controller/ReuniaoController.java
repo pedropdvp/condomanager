@@ -21,31 +21,31 @@ public class ReuniaoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('REUNIOES','CONSULTAR')")
     public List<ReuniaoDTO> listar() {
         return service.listar();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO','CONDOMINO')")
+    @PreAuthorize("@permissoes.pode('REUNIOES','CONSULTAR')")
     public ReuniaoDTO obter(@PathVariable Long id) {
         return service.obter(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissoes.pode('REUNIOES','CRIAR')")
     public ResponseEntity<ReuniaoDTO> agendar(@Valid @RequestBody ReuniaoDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.agendar(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissoes.pode('REUNIOES','EDITAR')")
     public ReuniaoDTO atualizar(@PathVariable Long id, @Valid @RequestBody ReuniaoDTO dto) {
         return service.atualizar(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR','FUNCIONARIO','ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissoes.pode('REUNIOES','APAGAR')")
     public ResponseEntity<Void> apagar(@PathVariable Long id) {
         service.apagar(id);
         return ResponseEntity.noContent().build();

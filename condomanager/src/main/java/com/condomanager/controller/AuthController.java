@@ -26,9 +26,9 @@ public class AuthController {
         return ResponseEntity.ok(authService.autenticar(pedido));
     }
 
-    /** Criacao de um novo acesso. Restrito a quem gere utilizadores (ADMIN_SISTEMA, GESTOR). */
+    /** Criacao de um novo acesso. Restrito a quem tem CRIAR em UTILIZADORES. */
     @PostMapping("/registo")
-    @PreAuthorize("hasAnyRole('ADMIN_SISTEMA','GESTOR')")
+    @PreAuthorize("@permissoes.pode('UTILIZADORES','CRIAR')")
     public ResponseEntity<RegistoResponse> registar(@Valid @RequestBody RegistoRequest pedido) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registar(pedido));
     }
