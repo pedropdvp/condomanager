@@ -77,10 +77,11 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">Permissões de acesso deste perfil</label>
+                        <label class="form-label">Permissões de acesso (ligue/desligue por funcionalidade)</label>
                         <div id="gridPermissoes" class="perm-grid">
                             <span class="text-muted small">A carregar permissões...</span>
                         </div>
+                        <div class="form-text small">Pré-preenchidas pelo perfil escolhido; pode ajustar cada ação.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -351,34 +352,47 @@ darkSwitch.addEventListener('change', () => {
     localStorage.setItem('tema', tema);
 });
 
-// ===== Criar novo acesso (registo) — ADMIN_SISTEMA e GESTOR (matriz de permissões) =====
-const perfisAtuais = JSON.parse(localStorage.getItem('perfis') || '[]');
-const podeGerirUtilizadores = perfisAtuais.includes('ROLE_ADMIN_SISTEMA') || perfisAtuais.includes('ROLE_GESTOR');
+// ===== Criar novo acesso (registo) com permissões granulares =====
 let modalRegisto = null;
 let matrizPermissoes = null;
-if (podeGerirUtilizadores) document.getElementById('btnRegisto').classList.remove('d-none');
 
 async function carregarMatriz() {
-    if (matrizPermissoes) return;
+    if (matrizPermissoes) return true;
     try {
-        const resp = await api('/api/permissoes');
-        if (resp.ok) matrizPermissoes = await resp.json();
-    } catch (e) { /* silencioso: a grelha mostra indisponível */ }
+        // fetch direto (sem o wrapper api()) para não disparar alerta a quem não tem permissão
+        const resp = await fetch('/api/permissoes', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (resp.ok) { matrizPermissoes = await resp.json(); return true; }
+    } catch (e) { /* sem permissão ou erro de ligação */ }
+    return false;
 }
 
-function classeNivel(nivel) {
-    return { SIM: 'perm-sim', CONSULTA: 'perm-consulta', PARTICIPA: 'perm-participa',
-             RECEBE: 'perm-recebe', NAO: 'perm-nao' }[nivel] || '';
-}
+// O botão "Criar novo acesso" só aparece a quem tem CRIAR em Utilizadores
+carregarMatriz().then(ok => { if (ok) document.getElementById('btnRegisto').classList.remove('d-none'); });
 
 function renderPermissoes(perfil) {
     const alvo = document.getElementById('gridPermissoes');
     if (!matrizPermissoes) { alvo.innerHTML = '<span class="text-muted small">Permissões indisponíveis.</span>'; return; }
-    alvo.innerHTML = matrizPermissoes.linhas.map(linha => {
-        const nivel = linha.permissoes[perfil];
-        return '<div class="perm-row"><span class="perm-func">' + linha.etiqueta + '</span>' +
-               '<span class="perm-badge ' + classeNivel(nivel) + '">' + matrizPermissoes.niveis[nivel] + '</span></div>';
+    const acoes = matrizPermissoes.acoes;
+    let html = '<div class="perm-head"><span></span>' +
+        acoes.map(a => '<span>' + a.etiqueta + '</span>').join('') + '</div>';
+    html += matrizPermissoes.funcionalidades.map(f => {
+        const ativos = f.perfis[perfil] || [];
+        const cells = acoes.map(a => {
+            const on = ativos.includes(a.codigo) ? ' checked' : '';
+            return '<label class="perm-cell" title="' + a.etiqueta + ' · ' + f.etiqueta +
+                   '"><input type="checkbox" data-func="' + f.funcionalidade + '" data-acao="' + a.codigo + '"' + on + '></label>';
+        }).join('');
+        return '<div class="perm-row"><span class="perm-func">' + f.etiqueta + '</span>' + cells + '</div>';
     }).join('');
+    alvo.innerHTML = html;
+}
+
+function coletarPermissoes() {
+    const mapa = {};
+    document.querySelectorAll('#gridPermissoes input[type="checkbox"]:checked').forEach(cb => {
+        (mapa[cb.dataset.func] = mapa[cb.dataset.func] || []).push(cb.dataset.acao);
+    });
+    return mapa;
 }
 
 async function abrirRegisto() {
@@ -400,7 +414,8 @@ document.getElementById('formRegisto').addEventListener('submit', async (e) => {
         nome: document.getElementById('r_nome').value.trim(),
         email: document.getElementById('r_email').value.trim(),
         password: document.getElementById('r_password').value,
-        perfil: document.getElementById('r_perfil').value
+        perfil: document.getElementById('r_perfil').value,
+        permissoes: coletarPermissoes()
     };
     try {
         const resp = await api('/api/auth/registo', {
