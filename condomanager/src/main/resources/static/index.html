@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CondoManager SaaS — Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-body-tertiary">
+<div class="container" style="max-width: 420px;">
+    <div class="card shadow-sm mt-5">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-1 text-center">CondoManager <span class="text-primary">SaaS</span></h1>
+            <p class="text-center text-muted small mb-4">Sistema de Gestão de Condomínios</p>
+
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" required value="admin@condomanager.com">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required value="admin123">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Entrar</button>
+            </form>
+            <div id="resultado" class="mt-3 small"></div>
+        </div>
+    </div>
+    <p class="text-center text-muted small mt-3">Credenciais de demonstração pré-preenchidas.</p>
+</div>
+
+<script>
+    if (localStorage.getItem('token')) {
+        window.location.href = 'app.html';
+    }
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const out = document.getElementById('resultado');
+        out.innerHTML = '<span class="text-muted">A autenticar...</span>';
+        try {
+            const resp = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value
+                })
+            });
+            if (!resp.ok) {
+                out.innerHTML = '<div class="alert alert-danger py-2">Credenciais inválidas.</div>';
+                return;
+            }
+            const dados = await resp.json();
+            localStorage.setItem('token', dados.token);
+            localStorage.setItem('nome', dados.nome);
+            localStorage.setItem('perfis', JSON.stringify(dados.perfis));
+            window.location.href = 'app.html';
+        } catch (err) {
+            out.innerHTML = '<div class="alert alert-danger py-2">Erro de ligação ao servidor.</div>';
+        }
+    });
+</script>
+</body>
+</html>
