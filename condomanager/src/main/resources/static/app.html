@@ -201,14 +201,15 @@ function rotulo(nome){ return LABELS[nome] || nome; }
 
 // Registo de referências: cada campo *Id resolve para outro módulo, mostrando o ID
 // e os campos que o identificam (ex.: uma Votação mostra a sua Reunião e Condomínio).
+// label -> texto da dropdown (ID + identificadores); short -> nome curto para a tabela.
 const REFS = {
-    empresaId:    { endpoint:'/api/empresas',    label: o => `#${o.id} · ${o.nome}${o.nif ? ' ('+o.nif+')' : ''}` },
-    condominioId: { endpoint:'/api/condominios', label: o => `#${o.id} · ${o.nome}` },
-    edificioId:   { endpoint:'/api/edificios',   label: o => `#${o.id} · ${o.nome} (condomínio ${o.condominioId})` },
-    fracaoId:     { endpoint:'/api/fracoes',     label: o => `#${o.id} · Fração ${o.numero} (condomínio ${o.condominioId})` },
-    condominoId:  { endpoint:'/api/condominos',  label: o => `#${o.id} · ${o.nome}` },
-    quotaId:      { endpoint:'/api/quotas',      label: o => `#${o.id} · ${o.mes}/${o.ano} — €${o.valor} (fração ${o.fracaoId})` },
-    reuniaoId:    { endpoint:'/api/reunioes',    label: o => `#${o.id} · ${o.assunto || '(sem assunto)'}${o.data ? ' — '+o.data : ''} (condomínio ${o.condominioId})` }
+    empresaId:    { endpoint:'/api/empresas',    label: o => `#${o.id} · ${o.nome}${o.nif ? ' ('+o.nif+')' : ''}`,                                  short: o => o.nome },
+    condominioId: { endpoint:'/api/condominios', label: o => `#${o.id} · ${o.nome}`,                                                                 short: o => o.nome },
+    edificioId:   { endpoint:'/api/edificios',   label: o => `#${o.id} · ${o.nome} (condomínio ${o.condominioId})`,                                  short: o => o.nome },
+    fracaoId:     { endpoint:'/api/fracoes',     label: o => `#${o.id} · Fração ${o.numero} (condomínio ${o.condominioId})`,                         short: o => `Fração ${o.numero}` },
+    condominoId:  { endpoint:'/api/condominos',  label: o => `#${o.id} · ${o.nome}`,                                                                 short: o => o.nome },
+    quotaId:      { endpoint:'/api/quotas',      label: o => `#${o.id} · ${o.mes}/${o.ano} — €${o.valor} (fração ${o.fracaoId})`,                    short: o => `${o.mes}/${o.ano} (fração ${o.fracaoId})` },
+    reuniaoId:    { endpoint:'/api/reunioes',    label: o => `#${o.id} · ${o.assunto || '(sem assunto)'}${o.data ? ' — '+o.data : ''} (condomínio ${o.condominioId})`, short: o => (o.assunto || `Reunião #${o.id}`) }
 };
 
 // Cache das listas de referência (evita pedidos repetidos por sessão).
@@ -379,11 +380,18 @@ async function carregarLista(k, m) {
         if (!dados.length) { t.innerHTML = '<p class="text-muted">Sem registos.</p>'; return; }
         const cols = m.colunas;
         const selecionavel = !m.somenteLeitura && (m.editavel || m.apagavel);
+        // Resolve colunas de referência para mostrar o nome em vez do ID.
+        const mapaRefs = {};
+        for (const c of cols) {
+            if (!REFS[c]) continue;
+            const lista = await carregarRef(c);
+            if (lista) { const mp = {}; lista.forEach(o => mp[o.id] = o); mapaRefs[c] = mp; }
+        }
         let html = '<div class="table-responsive"><table class="table table-sm table-hover align-middle">'
             + '<thead><tr>' + cols.map(c => `<th>${c === 'id' ? 'ID' : rotulo(c)}</th>`).join('') + '</tr></thead><tbody>';
         dados.forEach(row => {
             const attrs = selecionavel ? ` style="cursor:pointer" onclick="selecionar('${k}', ${row.id})"` : '';
-            html += `<tr data-row-id="${row.id}"${attrs}>` + cols.map(c => `<td>${fmt(row[c])}</td>`).join('') + '</tr>';
+            html += `<tr data-row-id="${row.id}"${attrs}>` + cols.map(c => `<td>${fmtCelula(c, row[c], mapaRefs)}</td>`).join('') + '</tr>';
         });
         html += '</tbody></table></div>';
         t.innerHTML = html;
@@ -399,6 +407,14 @@ async function carregarLista(k, m) {
 }
 
 function fmt(v){ if (v === null || v === undefined) return '—'; if (v === true) return 'Sim'; if (v===false) return 'Não'; return v; }
+
+// Mostra o nome de uma referência (em vez do ID) quando resolúvel; senão o valor cru.
+function fmtCelula(col, val, mapaRefs){
+    if (REFS[col] && val !== null && val !== undefined && mapaRefs[col] && mapaRefs[col][val]) {
+        return fmt(REFS[col].short(mapaRefs[col][val]));
+    }
+    return fmt(val);
+}
 
 // Seleciona uma linha: realça e carrega os valores no formulário.
 function selecionar(k, id) {
