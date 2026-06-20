@@ -1,5 +1,9 @@
 // URL base da API.
-//  - Vazio ("")  -> mesma origem (quando o backend tambem serve o frontend).
-//  - No GitHub Pages, defina o URL do backend implantado, por exemplo:
-//        window.CONDO_API_BASE = "https://condomanager-production.up.railway.app";
-window.CONDO_API_BASE = "https://condomanager-app-production.up.railway.app";
+//  - Em localhost  -> "" (mesma origem): o backend local serve tambem o frontend.
+//  - Publicado (ex.: GitHub Pages) -> URL do backend implantado (Railway).
+// A detecao e automatica, pelo que o mesmo ficheiro funciona local e na cloud.
+(function () {
+    var host = location.hostname;
+    var local = (host === 'localhost' || host === '127.0.0.1' || host === '');
+    window.CONDO_API_BASE = local ? '' : 'https://condomanager-app-production.up.railway.app';
+})();
