@@ -34,23 +34,38 @@ public class DataInitializer {
             }
 
             String adminEmail = "admin@condomanager.com";
-            if (!utilizadorRepository.existsByEmail(adminEmail)) {
-                Perfil adminPerfil = perfilRepository.findByNome(NomePerfil.ADMIN_SISTEMA).orElseThrow();
-                // Administrador do Sistema: acesso total (todas as acoes em todas as funcionalidades)
-                Set<PermissaoAcesso> todas = new HashSet<>();
-                for (Funcionalidade f : Funcionalidade.values()) {
-                    for (Acao a : Acao.values()) {
-                        todas.add(new PermissaoAcesso(f, a));
-                    }
-                }
+            Perfil adminPerfil = perfilRepository.findByNome(NomePerfil.ADMIN_SISTEMA).orElseThrow();
 
-                Utilizador admin = new Utilizador();
-                admin.setNome("Administrador do Sistema");
-                admin.setEmail(adminEmail);
-                admin.setPassword(passwordEncoder.encode("admin123"));
-                admin.setAtivo(true);
+            // Administrador do Sistema: acesso total (todas as acoes em todas as funcionalidades)
+            Set<PermissaoAcesso> todas = new HashSet<>();
+            for (Funcionalidade f : Funcionalidade.values()) {
+                for (Acao a : Acao.values()) {
+                    todas.add(new PermissaoAcesso(f, a));
+                }
+            }
+
+            Utilizador admin = utilizadorRepository.findByEmail(adminEmail).orElseGet(() -> {
+                Utilizador novo = new Utilizador();
+                novo.setNome("Administrador do Sistema");
+                novo.setEmail(adminEmail);
+                novo.setPassword(passwordEncoder.encode("admin123"));
+                novo.setAtivo(true);
+                return novo;
+            });
+
+            // Garante (de forma idempotente) que o admin tem sempre o perfil e o
+            // acesso total. Corrige contas criadas antes do sistema de permissoes
+            // granulares, que de outro modo receberiam HTTP 403 ao criar registos.
+            boolean alterado = false;
+            if (admin.getPerfis() == null || !admin.getPerfis().contains(adminPerfil)) {
                 admin.setPerfis(Set.of(adminPerfil));
+                alterado = true;
+            }
+            if (admin.getId() == null || !admin.getPermissoes().containsAll(todas)) {
                 admin.setPermissoes(todas);
+                alterado = true;
+            }
+            if (alterado) {
                 utilizadorRepository.save(admin);
             }
         };

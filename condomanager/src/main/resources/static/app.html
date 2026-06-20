@@ -123,55 +123,57 @@ function mostrarAlerta(msg, tipo = 'success') {
 }
 
 // ===== Configuração dos módulos (config-driven CRUD) =====
+// editavel  -> tem endpoint PUT (Alterar)
+// apagavel  -> tem endpoint DELETE (Apagar)
 const MODULOS = {
     dashboard:   { titulo: 'Dashboard', dashboard: true },
-    empresas:    { titulo: 'Empresas', endpoint: '/api/empresas',
+    empresas:    { titulo: 'Empresas', endpoint: '/api/empresas', editavel:true, apagavel:true,
         colunas: ['id','nome','nif','email','plano'],
         campos: [f('nome'),f('nif'),f('email'),f('telefone'),f('morada'),
                  sel('plano',['STARTER','BUSINESS','ENTERPRISE'])] },
-    condominios: { titulo: 'Condomínios', endpoint: '/api/condominios',
+    condominios: { titulo: 'Condomínios', endpoint: '/api/condominios', editavel:true, apagavel:true,
         colunas: ['id','nome','morada','orcamentoAnual','empresaId'],
-        campos: [f('nome'),f('morada'),num('orcamentoAnual'),num('empresaId',true)] },
-    edificios:   { titulo: 'Edifícios', endpoint: '/api/edificios',
+        campos: [f('nome'),f('morada'),num('orcamentoAnual'),ref('empresaId',true)] },
+    edificios:   { titulo: 'Edifícios', endpoint: '/api/edificios', editavel:true, apagavel:true,
         colunas: ['id','nome','morada','numPisos','condominioId'],
-        campos: [f('nome'),f('morada'),num('numPisos'),num('condominioId',true)] },
-    fracoes:     { titulo: 'Frações', endpoint: '/api/fracoes',
+        campos: [f('nome'),f('morada'),num('numPisos'),ref('condominioId',true)] },
+    fracoes:     { titulo: 'Frações', endpoint: '/api/fracoes', editavel:true, apagavel:true,
         colunas: ['id','numero','piso','permilagem','tipologia','condominioId'],
         campos: [f('numero',true),num('piso'),num('permilagem'),f('tipologia'),
-                 num('edificioId'),num('condominioId',true)] },
-    condominos:  { titulo: 'Condóminos', endpoint: '/api/condominos',
+                 ref('edificioId'),ref('condominioId',true)] },
+    condominos:  { titulo: 'Condóminos', endpoint: '/api/condominos', editavel:true, apagavel:true,
         colunas: ['id','nome','nif','email','tipo','fracaoId'],
         campos: [f('nome',true),f('nif'),f('email'),f('telefone'),
-                 sel('tipo',['PROPRIETARIO','INQUILINO']),num('fracaoId')] },
+                 sel('tipo',['PROPRIETARIO','INQUILINO']),ref('fracaoId')] },
     quotas:      { titulo: 'Quotas', endpoint: '/api/quotas',
         colunas: ['id','mes','ano','valor','estado','fracaoId'], somenteLeitura: true,
         acaoExtra: { label: 'Gerar faturação do mês', metodo: 'POST', path: '/api/quotas/gerar' } },
-    pagamentos:  { titulo: 'Pagamentos', endpoint: '/api/pagamentos',
-        colunas: ['id','valor','data','metodo','estado','quotaId'], criarPath: '/api/pagamentos',
-        campos: [num('valor',true),sel('metodo',['MBWAY','TRANSFERENCIA','PAYPAL']),num('quotaId',true)] },
-    despesas:    { titulo: 'Despesas', endpoint: '/api/despesas',
+    pagamentos:  { titulo: 'Pagamentos', endpoint: '/api/pagamentos', criarPath: '/api/pagamentos',
+        colunas: ['id','valor','data','metodo','estado','quotaId'],
+        campos: [num('valor',true),sel('metodo',['MBWAY','TRANSFERENCIA','PAYPAL']),ref('quotaId',true)] },
+    despesas:    { titulo: 'Despesas', endpoint: '/api/despesas', editavel:true, apagavel:true,
         colunas: ['id','descricao','valor','categoria','estado','condominioId'],
-        campos: [f('descricao',true),num('valor',true),f('categoria'),num('condominioId',true)] },
-    atas:        { titulo: 'Atas', endpoint: '/api/atas',
+        campos: [f('descricao',true),num('valor',true),f('categoria'),ref('condominioId',true)] },
+    atas:        { titulo: 'Atas', endpoint: '/api/atas', editavel:true, apagavel:true,
         colunas: ['id','titulo','dataReuniao','arquivada','condominioId'],
-        campos: [f('titulo',true),f('descricao'),date('dataReuniao'),num('condominioId',true)] },
-    reunioes:    { titulo: 'Reuniões', endpoint: '/api/reunioes', criarPath:'/api/reunioes',
+        campos: [f('titulo',true),f('descricao'),date('dataReuniao'),ref('condominioId',true)] },
+    reunioes:    { titulo: 'Reuniões', endpoint: '/api/reunioes', criarPath:'/api/reunioes', editavel:true, apagavel:true,
         colunas: ['id','assunto','data','hora','local','estado','condominioId'],
-        campos: [f('assunto'),date('data',true),f('hora'),f('local'),num('condominioId',true)] },
+        campos: [f('assunto'),date('data',true),time('hora'),f('local'),ref('condominioId',true)] },
     votacoes:    { titulo: 'Votações', endpoint: '/api/votacoes',
         colunas: ['id','tema','estado','condominioId'],
-        campos: [f('tema',true),num('reuniaoId'),num('condominioId',true)] },
+        campos: [f('tema',true),ref('reuniaoId'),ref('condominioId',true)] },
     mensagens:   { titulo: 'Mensagens', endpoint: '/api/mensagens', criarPath:'/api/mensagens',
         colunas: ['id','assunto','destino','dataEnvio','condominioId'],
         campos: [f('assunto',true),f('conteudo'),sel('destino',['TODOS','GRUPO','CONDOMINO']),
-                 num('condominoId'),num('condominioId',true)] },
-    documentos:  { titulo: 'Documentos', endpoint: '/api/documentos', criarPath:'/api/documentos',
+                 ref('condominoId'),ref('condominioId',true)] },
+    documentos:  { titulo: 'Documentos', endpoint: '/api/documentos', criarPath:'/api/documentos', apagavel:true,
         colunas: ['id','nome','tipo','dataUpload','condominioId'],
         campos: [f('nome',true),sel('tipo',['REGULAMENTO','CONTRATO','ORCAMENTO','ATA','FATURA','APOLICE']),
-                 f('ficheiro'),num('condominioId',true)] },
-    ocorrencias: { titulo: 'Ocorrências', endpoint: '/api/ocorrencias', criarPath:'/api/ocorrencias',
+                 f('ficheiro'),ref('condominioId',true)] },
+    ocorrencias: { titulo: 'Ocorrências', endpoint: '/api/ocorrencias', criarPath:'/api/ocorrencias', apagavel:true,
         colunas: ['id','titulo','estado','prioridade','condominoId'],
-        campos: [f('titulo',true),f('descricao'),sel('prioridade',['BAIXA','MEDIA','ALTA']),num('condominoId')] },
+        campos: [f('titulo',true),f('descricao'),sel('prioridade',['BAIXA','MEDIA','ALTA']),ref('condominoId')] },
     historico:   { titulo: 'Histórico (Auditoria)', endpoint: '/api/historico',
         colunas: ['id','utilizador','operacao','dataHora'], somenteLeitura: true },
     relatorios:  { titulo: 'Relatórios', relatorio: true }
@@ -180,7 +182,48 @@ const MODULOS = {
 function f(nome, req){ return { nome, tipo:'text', req: !!req }; }
 function num(nome, req){ return { nome, tipo:'number', req: !!req }; }
 function date(nome, req){ return { nome, tipo:'date', req: !!req }; }
+function time(nome, req){ return { nome, tipo:'time', req: !!req }; }
 function sel(nome, opcoes){ return { nome, tipo:'select', opcoes, req:false }; }
+function ref(nome, req){ return { nome, tipo:'ref', req: !!req }; }
+
+// Etiquetas legíveis para os campos do formulário.
+const LABELS = {
+    nome:'Nome', nif:'NIF', email:'Email', telefone:'Telefone', morada:'Morada', plano:'Plano',
+    orcamentoAnual:'Orçamento anual (€)', empresaId:'Empresa', condominioId:'Condomínio',
+    numPisos:'Nº de pisos', numero:'Número', piso:'Piso', permilagem:'Permilagem', tipologia:'Tipologia',
+    edificioId:'Edifício', fracaoId:'Fração', tipo:'Tipo', conteudo:'Conteúdo', destino:'Destino',
+    condominoId:'Condómino', valor:'Valor (€)', metodo:'Método', quotaId:'Quota', descricao:'Descrição',
+    categoria:'Categoria', titulo:'Título', dataReuniao:'Data da reunião', assunto:'Assunto',
+    data:'Data', hora:'Hora', local:'Local', tema:'Tema', reuniaoId:'Reunião', ficheiro:'Ficheiro',
+    prioridade:'Prioridade'
+};
+function rotulo(nome){ return LABELS[nome] || nome; }
+
+// Registo de referências: cada campo *Id resolve para outro módulo, mostrando o ID
+// e os campos que o identificam (ex.: uma Votação mostra a sua Reunião e Condomínio).
+const REFS = {
+    empresaId:    { endpoint:'/api/empresas',    label: o => `#${o.id} · ${o.nome}${o.nif ? ' ('+o.nif+')' : ''}` },
+    condominioId: { endpoint:'/api/condominios', label: o => `#${o.id} · ${o.nome}` },
+    edificioId:   { endpoint:'/api/edificios',   label: o => `#${o.id} · ${o.nome} (condomínio ${o.condominioId})` },
+    fracaoId:     { endpoint:'/api/fracoes',     label: o => `#${o.id} · Fração ${o.numero} (condomínio ${o.condominioId})` },
+    condominoId:  { endpoint:'/api/condominos',  label: o => `#${o.id} · ${o.nome}` },
+    quotaId:      { endpoint:'/api/quotas',      label: o => `#${o.id} · ${o.mes}/${o.ano} — €${o.valor} (fração ${o.fracaoId})` },
+    reuniaoId:    { endpoint:'/api/reunioes',    label: o => `#${o.id} · ${o.assunto || '(sem assunto)'}${o.data ? ' — '+o.data : ''} (condomínio ${o.condominioId})` }
+};
+
+// Cache das listas de referência (evita pedidos repetidos por sessão).
+const refCache = {};
+async function carregarRef(campoNome) {
+    if (refCache[campoNome] !== undefined) return refCache[campoNome];
+    const r = REFS[campoNome];
+    try {
+        // fetch silencioso (sem o wrapper api()) para não disparar alerta a quem
+        // não tem permissão de consulta sobre o módulo referenciado.
+        const resp = await fetch(API_BASE + r.endpoint, { headers: { 'Authorization': 'Bearer ' + token } });
+        refCache[campoNome] = resp.ok ? await resp.json() : null;
+    } catch (e) { refCache[campoNome] = null; }
+    return refCache[campoNome];
+}
 
 // ===== Navegação =====
 const menu = document.getElementById('menu');
@@ -245,16 +288,27 @@ async function abrirRelatorio() {
 }
 
 // ===== CRUD genérico =====
+let selecionado = null;   // { k, id } do registo selecionado na tabela
+let listaAtual = [];      // registos atualmente apresentados na tabela
+
 async function renderCrud(k, m) {
+    selecionado = null;
     const c = document.getElementById('conteudo');
     let formHtml = '';
     if (!m.somenteLeitura && m.campos) {
         formHtml = `<div class="card shadow-sm mb-3"><div class="card-body">
-            <h6 class="card-title">Novo registo</h6>
+            <h6 class="card-title" id="tituloForm">Novo registo</h6>
             <form id="formCrud" class="row g-2">` +
             m.campos.map(campoHtml).join('') +
-            `<div class="col-12"><button class="btn btn-primary btn-sm">Adicionar</button></div>
-            </form></div></div>`;
+            `<div class="col-12 d-flex flex-wrap gap-2 mt-1">
+                <button type="submit" id="btnAdicionar" class="btn btn-primary btn-sm">Adicionar</button>` +
+                (m.editavel ? `<button type="button" id="btnAlterar" class="btn btn-warning btn-sm" disabled>Alterar</button>` : '') +
+                (m.apagavel ? `<button type="button" id="btnApagar" class="btn btn-danger btn-sm" disabled>Apagar</button>` : '') +
+                `<button type="button" id="btnCancelar" class="btn btn-outline-secondary btn-sm d-none">Cancelar seleção</button>
+             </div>
+            </form>
+            <div class="form-text small mt-2">Clique numa linha da tabela para a selecionar e depois use <b>Alterar</b> ou <b>Apagar</b>.</div>
+            </div></div>`;
     }
     let extraHtml = '';
     if (m.acaoExtra) {
@@ -264,13 +318,25 @@ async function renderCrud(k, m) {
 
     if (document.getElementById('formCrud')) {
         document.getElementById('formCrud').addEventListener('submit', (e) => { e.preventDefault(); criar(k, m); });
+        const bAlt = document.getElementById('btnAlterar');
+        const bApg = document.getElementById('btnApagar');
+        const bCan = document.getElementById('btnCancelar');
+        if (bAlt) bAlt.addEventListener('click', () => alterar(k, m));
+        if (bApg) bApg.addEventListener('click', () => apagar(k, m));
+        if (bCan) bCan.addEventListener('click', () => cancelarSelecao(m));
+        popularReferencias(m);
     }
     carregarLista(k, m);
 }
 
 function campoHtml(campo) {
     const id = 'c_' + campo.nome;
-    const lbl = `<label class="form-label small mb-0">${campo.nome}${campo.req?' *':''}</label>`;
+    const lbl = `<label class="form-label small mb-0" for="${id}">${rotulo(campo.nome)}${campo.req?' *':''}</label>`;
+    if (campo.tipo === 'ref') {
+        // Dropdown preenchida em popularReferencias(); fallback para nº caso falhe.
+        return `<div class="col-md-4">${lbl}<select id="${id}" data-ref="${campo.nome}" ${campo.req?'required':''}
+            class="form-select form-select-sm"><option value="">A carregar…</option></select></div>`;
+    }
     if (campo.tipo === 'select') {
         return `<div class="col-md-3">${lbl}<select id="${id}" class="form-select form-select-sm">
             <option value=""></option>` +
@@ -280,24 +346,50 @@ function campoHtml(campo) {
         class="form-control form-control-sm"></div>`;
 }
 
+// Preenche as dropdowns de referência (campos *Id) com ID + dados identificadores.
+async function popularReferencias(m) {
+    const campos = (m.campos || []).filter(c => c.tipo === 'ref');
+    for (const campo of campos) {
+        const sel = document.getElementById('c_' + campo.nome);
+        if (!sel) continue;
+        const dados = await carregarRef(campo.nome);
+        if (dados === null) {
+            // Sem acesso de consulta ao módulo referenciado: usa input numérico.
+            const novo = document.createElement('input');
+            novo.type = 'number'; novo.id = sel.id; novo.className = 'form-control form-control-sm';
+            novo.setAttribute('data-ref', campo.nome);
+            if (campo.req) novo.required = true;
+            sel.replaceWith(novo);
+            continue;
+        }
+        const r = REFS[campo.nome];
+        let opts = '<option value="">— selecione —</option>';
+        opts += dados.map(o => `<option value="${o.id}">${r.label(o)}</option>`).join('');
+        sel.innerHTML = opts;
+    }
+}
+
 async function carregarLista(k, m) {
     try {
         const dados = await (await api(m.endpoint)).json();
+        listaAtual = dados;
         const t = document.getElementById('tabela');
         if (!dados.length) { t.innerHTML = '<p class="text-muted">Sem registos.</p>'; return; }
         const cols = m.colunas;
+        const selecionavel = !m.somenteLeitura && (m.editavel || m.apagavel);
         let html = '<div class="table-responsive"><table class="table table-sm table-hover align-middle">'
-            + '<thead><tr>' + cols.map(c => `<th>${c}</th>`).join('')
-            + (m.somenteLeitura ? '' : '<th></th>') + '</tr></thead><tbody>';
+            + '<thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
         dados.forEach(row => {
-            html += '<tr>' + cols.map(c => `<td>${fmt(row[c])}</td>`).join('');
-            if (!m.somenteLeitura)
-                html += `<td><button class="btn btn-outline-danger btn-sm py-0"
-                          onclick="apagar('${k}',${row.id})">×</button></td>`;
-            html += '</tr>';
+            const attrs = selecionavel ? ` style="cursor:pointer" onclick="selecionar('${k}', ${row.id})"` : '';
+            html += `<tr data-row-id="${row.id}"${attrs}>` + cols.map(c => `<td>${fmt(row[c])}</td>`).join('') + '</tr>';
         });
         html += '</tbody></table></div>';
         t.innerHTML = html;
+        // Mantém o destaque caso ainda haja um registo selecionado.
+        if (selecionado && selecionado.k === k) {
+            const tr = document.querySelector(`#tabela tr[data-row-id="${selecionado.id}"]`);
+            if (tr) tr.classList.add('table-active');
+        }
     } catch(e) {
         document.getElementById('tabela').innerHTML =
             '<div class="alert alert-warning">Sem acesso a este módulo com o perfil atual.</div>';
@@ -306,33 +398,89 @@ async function carregarLista(k, m) {
 
 function fmt(v){ if (v === null || v === undefined) return '—'; if (v === true) return 'Sim'; if (v===false) return 'Não'; return v; }
 
-async function criar(k, m) {
+// Seleciona uma linha: realça e carrega os valores no formulário.
+function selecionar(k, id) {
+    const m = MODULOS[k];
+    const row = listaAtual.find(r => r.id === id);
+    if (!row) return;
+    selecionado = { k, id: row.id };
+    document.querySelectorAll('#tabela tr').forEach(tr => tr.classList.remove('table-active'));
+    const tr = document.querySelector(`#tabela tr[data-row-id="${row.id}"]`);
+    if (tr) tr.classList.add('table-active');
+
+    (m.campos || []).forEach(campo => {
+        const el = document.getElementById('c_' + campo.nome);
+        if (!el) return;
+        let val = row[campo.nome];
+        if (campo.tipo === 'time' && typeof val === 'string') val = val.substring(0,5); // HH:mm
+        el.value = (val === null || val === undefined) ? '' : val;
+    });
+
+    const tituloForm = document.getElementById('tituloForm');
+    if (tituloForm) tituloForm.textContent = 'Registo selecionado: #' + row.id;
+    const bAlt = document.getElementById('btnAlterar'); if (bAlt) bAlt.disabled = false;
+    const bApg = document.getElementById('btnApagar'); if (bApg) bApg.disabled = false;
+    const bCan = document.getElementById('btnCancelar'); if (bCan) bCan.classList.remove('d-none');
+}
+
+function cancelarSelecao(m) {
+    selecionado = null;
+    document.querySelectorAll('#tabela tr').forEach(tr => tr.classList.remove('table-active'));
+    const form = document.getElementById('formCrud'); if (form) form.reset();
+    popularReferencias(m);
+    const tituloForm = document.getElementById('tituloForm'); if (tituloForm) tituloForm.textContent = 'Novo registo';
+    const bAlt = document.getElementById('btnAlterar'); if (bAlt) bAlt.disabled = true;
+    const bApg = document.getElementById('btnApagar'); if (bApg) bApg.disabled = true;
+    const bCan = document.getElementById('btnCancelar'); if (bCan) bCan.classList.add('d-none');
+}
+
+// Lê os campos do formulário para um objeto a enviar.
+function lerFormulario(m) {
     const corpo = {};
     m.campos.forEach(campo => {
         const el = document.getElementById('c_' + campo.nome);
+        if (!el) return;
         let val = el.value;
         if (val === '') return;
-        if (campo.tipo === 'number') val = Number(val);
+        if (campo.tipo === 'number' || campo.tipo === 'ref') val = Number(val);
         corpo[campo.nome] = val;
     });
+    return corpo;
+}
+
+async function criar(k, m) {
     try {
         const resp = await api(m.criarPath || m.endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(corpo)
+            body: JSON.stringify(lerFormulario(m))
         });
-        if (resp.ok) { mostrarAlerta('Registo criado com sucesso.'); carregarLista(k, m);
-            document.getElementById('formCrud').reset(); }
+        if (resp.ok) { mostrarAlerta('Registo criado com sucesso.'); cancelarSelecao(m); carregarLista(k, m); }
         else { const err = await resp.json().catch(()=>({})); mostrarAlerta(err.mensagem || 'Erro ao criar.', 'danger'); }
     } catch(e){ /* alerta já mostrado */ }
 }
 
-async function apagar(k, id) {
-    const m = MODULOS[k];
-    if (!confirm('Apagar registo ' + id + '?')) return;
+async function alterar(k, m) {
+    if (!selecionado) return;
+    const id = selecionado.id;
+    try {
+        const resp = await api(m.endpoint + '/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lerFormulario(m))
+        });
+        if (resp.ok) { mostrarAlerta('Registo #' + id + ' alterado com sucesso.'); cancelarSelecao(m); carregarLista(k, m); }
+        else { const err = await resp.json().catch(()=>({})); mostrarAlerta(err.mensagem || 'Erro ao alterar.', 'danger'); }
+    } catch(e){ /* alerta já mostrado */ }
+}
+
+async function apagar(k, m) {
+    if (!selecionado) return;
+    const id = selecionado.id;
+    if (!confirm('Apagar o registo #' + id + '?')) return;
     try {
         const resp = await api(m.endpoint + '/' + id, { method: 'DELETE' });
-        if (resp.ok) { mostrarAlerta('Registo apagado.'); carregarLista(k, m); }
+        if (resp.ok) { mostrarAlerta('Registo #' + id + ' apagado.'); cancelarSelecao(m); carregarLista(k, m); }
         else mostrarAlerta('Não foi possível apagar.', 'danger');
     } catch(e){}
 }
