@@ -138,9 +138,9 @@ const MODULOS = {
         colunas: ['id','nome','morada','numPisos','condominioId'],
         campos: [f('nome'),f('morada'),num('numPisos'),ref('condominioId',true)] },
     fracoes:     { titulo: 'Frações', endpoint: '/api/fracoes', editavel:true, apagavel:true,
-        colunas: ['id','numero','piso','permilagem','tipologia','condominioId'],
-        campos: [f('numero',true),num('piso'),num('permilagem'),f('tipologia'),
-                 ref('edificioId'),ref('condominioId',true)] },
+        colunas: ['id','numero','condominioId','edificioId','piso','permilagem','tipologia'],
+        campos: [f('numero',true),ref('condominioId',true),ref('edificioId'),
+                 num('piso'),num('permilagem'),f('tipologia')] },
     condominos:  { titulo: 'Condóminos', endpoint: '/api/condominos', editavel:true, apagavel:true,
         colunas: ['id','nome','nif','email','tipo','fracaoId'],
         campos: [f('nome',true),f('nif'),f('email'),f('telefone'),
@@ -380,7 +380,7 @@ async function carregarLista(k, m) {
         const cols = m.colunas;
         const selecionavel = !m.somenteLeitura && (m.editavel || m.apagavel);
         let html = '<div class="table-responsive"><table class="table table-sm table-hover align-middle">'
-            + '<thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+            + '<thead><tr>' + cols.map(c => `<th>${c === 'id' ? 'ID' : rotulo(c)}</th>`).join('') + '</tr></thead><tbody>';
         dados.forEach(row => {
             const attrs = selecionavel ? ` style="cursor:pointer" onclick="selecionar('${k}', ${row.id})"` : '';
             html += `<tr data-row-id="${row.id}"${attrs}>` + cols.map(c => `<td>${fmt(row[c])}</td>`).join('') + '</tr>';
