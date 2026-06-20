@@ -213,6 +213,8 @@ const REFS = {
 
 // Cache das listas de referência (evita pedidos repetidos por sessão).
 const refCache = {};
+// Invalida a cache para que as dropdowns reflitam registos criados/alterados/apagados.
+function invalidarRefs() { for (const k in refCache) delete refCache[k]; }
 async function carregarRef(campoNome) {
     if (refCache[campoNome] !== undefined) return refCache[campoNome];
     const r = REFS[campoNome];
@@ -455,7 +457,7 @@ async function criar(k, m) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(lerFormulario(m))
         });
-        if (resp.ok) { mostrarAlerta('Registo criado com sucesso.'); cancelarSelecao(m); carregarLista(k, m); }
+        if (resp.ok) { invalidarRefs(); mostrarAlerta('Registo criado com sucesso.'); cancelarSelecao(m); carregarLista(k, m); }
         else { const err = await resp.json().catch(()=>({})); mostrarAlerta(err.mensagem || 'Erro ao criar.', 'danger'); }
     } catch(e){ /* alerta já mostrado */ }
 }
@@ -469,7 +471,7 @@ async function alterar(k, m) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(lerFormulario(m))
         });
-        if (resp.ok) { mostrarAlerta('Registo #' + id + ' alterado com sucesso.'); cancelarSelecao(m); carregarLista(k, m); }
+        if (resp.ok) { invalidarRefs(); mostrarAlerta('Registo #' + id + ' alterado com sucesso.'); cancelarSelecao(m); carregarLista(k, m); }
         else { const err = await resp.json().catch(()=>({})); mostrarAlerta(err.mensagem || 'Erro ao alterar.', 'danger'); }
     } catch(e){ /* alerta já mostrado */ }
 }
@@ -480,7 +482,7 @@ async function apagar(k, m) {
     if (!confirm('Apagar o registo #' + id + '?')) return;
     try {
         const resp = await api(m.endpoint + '/' + id, { method: 'DELETE' });
-        if (resp.ok) { mostrarAlerta('Registo #' + id + ' apagado.'); cancelarSelecao(m); carregarLista(k, m); }
+        if (resp.ok) { invalidarRefs(); mostrarAlerta('Registo #' + id + ' apagado.'); cancelarSelecao(m); carregarLista(k, m); }
         else mostrarAlerta('Não foi possível apagar.', 'danger');
     } catch(e){}
 }
