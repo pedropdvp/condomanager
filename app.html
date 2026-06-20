@@ -202,15 +202,32 @@ function rotulo(nome){ return LABELS[nome] || nome; }
 // Registo de referências: cada campo *Id resolve para outro módulo, mostrando o ID
 // e os campos que o identificam (ex.: uma Votação mostra a sua Reunião e Condomínio).
 // label -> texto da dropdown (ID + identificadores); short -> nome curto para a tabela.
+// needs -> outras referencias a carregar para resolver nomes dentro do label.
 const REFS = {
-    empresaId:    { endpoint:'/api/empresas',    label: o => `#${o.id} · ${o.nome}${o.nif ? ' ('+o.nif+')' : ''}`,                                  short: o => o.nome },
-    condominioId: { endpoint:'/api/condominios', label: o => `#${o.id} · ${o.nome}`,                                                                 short: o => o.nome },
-    edificioId:   { endpoint:'/api/edificios',   label: o => `#${o.id} · ${o.nome} (condomínio ${o.condominioId})`,                                  short: o => o.nome },
-    fracaoId:     { endpoint:'/api/fracoes',     label: o => `#${o.id} · Fração ${o.numero} (condomínio ${o.condominioId})`,                         short: o => `Fração ${o.numero}` },
-    condominoId:  { endpoint:'/api/condominos',  label: o => `#${o.id} · ${o.nome}`,                                                                 short: o => o.nome },
-    quotaId:      { endpoint:'/api/quotas',      label: o => `#${o.id} · ${o.mes}/${o.ano} — €${o.valor} (fração ${o.fracaoId})`,                    short: o => `${o.mes}/${o.ano} (fração ${o.fracaoId})` },
-    reuniaoId:    { endpoint:'/api/reunioes',    label: o => `#${o.id} · ${o.assunto || '(sem assunto)'}${o.data ? ' — '+o.data : ''} (condomínio ${o.condominioId})`, short: o => (o.assunto || `Reunião #${o.id}`) }
+    empresaId:    { endpoint:'/api/empresas',    label: o => `#${o.id} · ${o.nome}${o.nif ? ' ('+o.nif+')' : ''}`,                short: o => o.nome },
+    condominioId: { endpoint:'/api/condominios', label: o => `#${o.id} · ${o.nome}`,                                               short: o => o.nome },
+    edificioId:   { endpoint:'/api/edificios',   needs:['condominioId'],
+                    label: o => `#${o.id} · ${o.nome} — ${nomeRef('condominioId', o.condominioId)}`,                               short: o => o.nome },
+    fracaoId:     { endpoint:'/api/fracoes',     needs:['condominioId','edificioId'],
+                    label: o => `#${o.id} · Fração ${o.numero} — ${nomeRef('condominioId', o.condominioId)}`
+                                 + (o.edificioId ? ` / ${nomeRef('edificioId', o.edificioId)}` : ''),                              short: o => `Fração ${o.numero}` },
+    condominoId:  { endpoint:'/api/condominos',  label: o => `#${o.id} · ${o.nome}`,                                               short: o => o.nome },
+    quotaId:      { endpoint:'/api/quotas',      needs:['fracaoId'],
+                    label: o => `#${o.id} · ${o.mes}/${o.ano} — €${o.valor} (${nomeRef('fracaoId', o.fracaoId)})`,                 short: o => `${o.mes}/${o.ano}` },
+    reuniaoId:    { endpoint:'/api/reunioes',    needs:['condominioId'],
+                    label: o => `#${o.id} · ${o.assunto || '(sem assunto)'}${o.data ? ' — '+o.data : ''} — ${nomeRef('condominioId', o.condominioId)}`, short: o => (o.assunto || `Reunião #${o.id}`) }
 };
+
+// Resolve o nome curto de uma referencia a partir da cache (senao devolve o ID).
+function nomeRef(campo, id) {
+    if (id === null || id === undefined) return '—';
+    const lista = refCache[campo];
+    if (Array.isArray(lista)) {
+        const o = lista.find(x => x.id === id);
+        if (o && REFS[campo]) return REFS[campo].short(o);
+    }
+    return id;
+}
 
 // Cache das listas de referência (evita pedidos repetidos por sessão).
 const refCache = {};
@@ -355,6 +372,9 @@ async function popularReferencias(m) {
     for (const campo of campos) {
         const sel = document.getElementById('c_' + campo.nome);
         if (!sel) continue;
+        // Carrega referencias dependentes para resolver nomes dentro do label.
+        const needs = (REFS[campo.nome] && REFS[campo.nome].needs) || [];
+        for (const dep of needs) await carregarRef(dep);
         const dados = await carregarRef(campo.nome);
         if (dados === null) {
             // Sem acesso de consulta ao módulo referenciado: usa input numérico.
