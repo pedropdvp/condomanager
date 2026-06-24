@@ -3,218 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CondoManager SaaS — Entrar</title>
+    <title>CondoManager — Software de Gestão de Condomínios (SaaS)</title>
+    <meta name="description"
+          content="Plataforma SaaS para empresas de gestão e condomínios autogeridos: quotas por permilagem, pagamentos, assembleias, votações digitais, atas, documentos e relatórios. Conforme a Lei 8/2022.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/theme.css" rel="stylesheet">
     <style>
-        .auth {
-            min-height: 100vh;
-            display: grid;
-            grid-template-columns: 1.05fr .95fr;
-        }
-
-        /* ---- Left: blueprint brand panel ---- */
-        .auth__brand {
-            position: relative;
-            overflow: hidden;
-            padding: clamp(2rem, 5vw, 4.5rem);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            color: #EDE7D7;
-            background:
-                radial-gradient(900px 540px at 78% -10%, rgba(224, 162, 74, .22), transparent 60%),
-                linear-gradient(160deg, #1a4d3c 0%, #133b2e 48%, #0e2c22 100%);
-        }
-        .auth__brand::before { /* blueprint grid */
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-                linear-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px) 0 0 / 34px 34px,
-                linear-gradient(90deg, rgba(255, 255, 255, .06) 1px, transparent 1px) 0 0 / 34px 34px;
-            mask-image: radial-gradient(120% 120% at 70% 20%, #000 40%, transparent 100%);
-        }
-        .auth__brand > * { position: relative; z-index: 1; }
-
-        .auth__mark {
-            font-family: var(--font-mono);
-            font-size: .64rem;
-            letter-spacing: .34em;
-            text-transform: uppercase;
-            color: rgba(237, 231, 215, .65);
-        }
-        .auth__headline {
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: clamp(2.1rem, 4vw, 3.4rem);
-            line-height: 1.02;
-            letter-spacing: -.025em;
-            margin: 0;
-            max-width: 14ch;
-        }
-        .auth__headline em {
-            font-style: italic;
-            color: #E8B25C;
-        }
-        .auth__sub {
-            margin-top: 1.3rem;
-            max-width: 42ch;
-            color: rgba(237, 231, 215, .74);
-            font-size: 1.02rem;
-            line-height: 1.6;
-        }
-        /* decorative line-art skyline */
-        .auth__skyline {
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
-            height: 96px;
-            opacity: .5;
-        }
-        .auth__skyline span {
-            flex: 1;
-            border: 1px solid rgba(237, 231, 215, .55);
-            border-bottom: none;
-            background:
-                repeating-linear-gradient(rgba(237,231,215,.18) 0 1px, transparent 1px 11px);
-            animation: grow 1s var(--ease) both;
-        }
-        .auth__skyline span:nth-child(1){ height: 46%; animation-delay:.05s }
-        .auth__skyline span:nth-child(2){ height: 78%; animation-delay:.12s }
-        .auth__skyline span:nth-child(3){ height: 60%; animation-delay:.19s }
-        .auth__skyline span:nth-child(4){ height: 100%; animation-delay:.26s }
-        .auth__skyline span:nth-child(5){ height: 52%; animation-delay:.33s }
-        .auth__skyline span:nth-child(6){ height: 84%; animation-delay:.40s }
-        .auth__skyline span:nth-child(7){ height: 38%; animation-delay:.47s }
-        @keyframes grow { from { height: 0; opacity: 0 } }
-
-        /* ---- Right: form panel ---- */
-        .auth__panel {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: clamp(1.5rem, 4vw, 3rem);
-            background: var(--paper);
-        }
-        .auth__card {
-            width: 100%;
-            max-width: 392px;
-            animation: rise .55s var(--ease) both;
-            animation-delay: .15s;
-        }
-        .auth__title {
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 1.7rem;
-            letter-spacing: -.02em;
-            margin-bottom: .15rem;
-        }
-        .auth__hint {
-            color: var(--ink-soft);
-            font-size: .9rem;
-            margin-bottom: 2rem;
-        }
-        .auth__form .form-control { padding: .7rem .85rem; }
-        .auth__submit {
-            width: 100%;
-            padding: .72rem;
-            font-size: 1rem;
-            margin-top: .35rem;
-        }
-        .auth__demo {
-            margin-top: 1.6rem;
-            padding: .7rem .85rem;
-            border: 1px dashed var(--line-strong);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-mono);
-            font-size: .73rem;
-            color: var(--ink-soft);
-            display: flex;
-            gap: .6rem;
-            align-items: baseline;
-        }
-        .auth__demo b { color: var(--pine); font-weight: 600; }
-
-        @media (max-width: 860px) {
-            .auth { grid-template-columns: 1fr; }
-            .auth__brand { display: none; }
-        }
+        .hero { background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); color: #fff; }
+        .feature-icon { font-size: 1.75rem; }
+        .plan-popular { border-color: var(--bs-primary); border-width: 2px; }
+        .price { font-size: 2.5rem; font-weight: 700; }
     </style>
 </head>
-<body>
-<div class="auth">
-    <!-- Brand / blueprint panel -->
-    <section class="auth__brand">
-        <div class="auth__mark">CondoManager · SaaS</div>
-        <div>
-            <h1 class="auth__headline">Gestão de condomínios com rigor de <em>arquiteto</em>.</h1>
-            <p class="auth__sub">Quotas, despesas, atas, votações e relatórios — uma plataforma única
-                para administrar o seu património com clareza e precisão.</p>
-        </div>
-        <div class="auth__skyline" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-        </div>
-    </section>
+<body class="bg-body-tertiary">
 
-    <!-- Form panel -->
-    <section class="auth__panel">
-        <div class="auth__card">
-            <h2 class="auth__title">Bem-vindo de volta</h2>
-            <p class="auth__hint">Inicie sessão para aceder ao painel de gestão.</p>
-
-            <form id="loginForm" class="auth__form">
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" required value="admin@condomanager.com">
-                </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" required value="admin123">
-                </div>
-                <button type="submit" class="btn btn-primary auth__submit">Entrar</button>
-            </form>
-            <div id="resultado" class="mt-3 small"></div>
-
-            <div class="auth__demo">
-                <span>↳</span>
-                <div>Demonstração &nbsp;·&nbsp; <b>admin@condomanager.com</b> / <b>admin123</b></div>
-            </div>
+<nav class="navbar navbar-expand-lg bg-primary sticky-top" data-bs-theme="dark">
+    <div class="container">
+        <a class="navbar-brand mb-0 h1" href="#top">🏢 CondoManager</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                <li class="nav-item"><a class="nav-link" href="#funcionalidades">Funcionalidades</a></li>
+                <li class="nav-item"><a class="nav-link" href="#planos">Planos</a></li>
+                <li class="nav-item"><a class="nav-link" href="#legal">Conformidade legal</a></li>
+                <li class="nav-item"><a class="btn btn-light btn-sm" href="https://github.com/pedropdvp/condomanager" target="_blank" rel="noopener">Código (GitHub)</a></li>
+                <li class="nav-item"><button id="themeToggle" class="btn btn-outline-light btn-sm" type="button">🌓</button></li>
+            </ul>
         </div>
-    </section>
+    </div>
+</nav>
+
+<!-- Banner: página estática -->
+<div class="alert alert-warning text-center rounded-0 mb-0 small" role="alert">
+    📄 Página de <strong>apresentação</strong> (estática, GitHub Pages). O sistema completo —
+    login, base de dados e API — corre num servidor backend (Spring Boot + MySQL).
 </div>
 
-<script src="config.js"></script>
+<!-- HERO -->
+<header id="top" class="hero py-5">
+    <div class="container py-4 text-center">
+        <h1 class="display-5 fw-bold">A gestão do seu condomínio, num só sistema</h1>
+        <p class="lead col-lg-8 mx-auto mt-3">
+            Quotas por permilagem, pagamentos, assembleias e votações digitais, atas, documentos,
+            ocorrências e relatórios — para empresas de gestão e condomínios autogeridos.
+        </p>
+        <div class="d-flex gap-2 justify-content-center mt-4">
+            <a href="#planos" class="btn btn-light btn-lg">Ver planos</a>
+            <a href="https://github.com/pedropdvp/condomanager" target="_blank" rel="noopener" class="btn btn-outline-light btn-lg">Ver o projeto</a>
+        </div>
+        <p class="small mt-3 mb-0 opacity-75">Conforme o regime da propriedade horizontal (Código Civil PT · Lei 8/2022)</p>
+    </div>
+</header>
+
+<!-- FUNCIONALIDADES -->
+<section id="funcionalidades" class="container py-5">
+    <h2 class="text-center mb-5">Tudo o que um condomínio precisa</h2>
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-4"><div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="feature-icon">💶</div><h3 class="h5 mt-2">Quotas &amp; Pagamentos</h3>
+            <p class="text-secondary mb-0">Emissão mensal por permilagem (base 1000) com fundo de reserva (≥10%) e registo de pagamentos.</p>
+        </div></div></div>
+        <div class="col-md-6 col-lg-4"><div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="feature-icon">🗳️</div><h3 class="h5 mt-2">Assembleias &amp; Votações</h3>
+            <p class="text-secondary mb-0">Convocatórias por email, votação digital e contagem automática por permilagem (maioria simples, 2/3, unanimidade).</p>
+        </div></div></div>
+        <div class="col-md-6 col-lg-4"><div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="feature-icon">📄</div><h3 class="h5 mt-2">Atas &amp; Documentos</h3>
+            <p class="text-secondary mb-0">Arquivo de atas e gestão documental com upload/download e pesquisa.</p>
+        </div></div></div>
+        <div class="col-md-6 col-lg-4"><div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="feature-icon">🛠️</div><h3 class="h5 mt-2">Ocorrências</h3>
+            <p class="text-secondary mb-0">Registo, atribuição e encerramento de incidentes, com prioridades e estados.</p>
+        </div></div></div>
+        <div class="col-md-6 col-lg-4"><div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="feature-icon">📊</div><h3 class="h5 mt-2">Dashboard &amp; Relatórios</h3>
+            <p class="text-secondary mb-0">Indicadores e relatórios em PDF e Excel (JasperReports).</p>
+        </div></div></div>
+        <div class="col-md-6 col-lg-4"><div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="feature-icon">🔒</div><h3 class="h5 mt-2">Seguro &amp; Multi-tenant</h3>
+            <p class="text-secondary mb-0">Isolamento total por empresa, autenticação JWT, perfis RBAC e auditoria imutável.</p>
+        </div></div></div>
+    </div>
+</section>
+
+<!-- PLANOS -->
+<section id="planos" class="bg-body py-5">
+    <div class="container">
+        <h2 class="text-center mb-2">Planos</h2>
+        <p class="text-center text-secondary mb-5">Escolha conforme a dimensão da sua operação. Sem fidelização.</p>
+        <div class="row g-4 align-items-stretch">
+            <div class="col-lg-4"><div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h3 class="h4">Starter</h3>
+                    <p class="text-secondary">Condomínios autogeridos e pequenos administradores.</p>
+                    <p class="price">29€<span class="fs-6 fw-normal text-secondary">/mês</span></p>
+                    <ul class="list-unstyled flex-grow-1 mt-2">
+                        <li>✅ Até <strong>3 condomínios</strong></li>
+                        <li>✅ Até 60 frações</li>
+                        <li>✅ Quotas, pagamentos e despesas</li>
+                        <li>✅ Documentos e ocorrências</li>
+                        <li>✅ Relatórios em PDF</li>
+                        <li class="text-secondary">— Votações digitais</li>
+                        <li class="text-secondary">— Relatórios Excel</li>
+                    </ul>
+                </div>
+            </div></div>
+            <div class="col-lg-4"><div class="card h-100 shadow-sm plan-popular position-relative">
+                <span class="badge bg-primary position-absolute top-0 start-50 translate-middle">Mais popular</span>
+                <div class="card-body d-flex flex-column">
+                    <h3 class="h4">Business</h3>
+                    <p class="text-secondary">Empresas de gestão de condomínios.</p>
+                    <p class="price">89€<span class="fs-6 fw-normal text-secondary">/mês</span></p>
+                    <ul class="list-unstyled flex-grow-1 mt-2">
+                        <li>✅ Até <strong>25 condomínios</strong></li>
+                        <li>✅ Frações ilimitadas</li>
+                        <li>✅ Tudo do Starter</li>
+                        <li>✅ Assembleias, convocatórias por email</li>
+                        <li>✅ Votações digitais</li>
+                        <li>✅ Relatórios PDF + Excel</li>
+                        <li>✅ Dashboard e auditoria</li>
+                    </ul>
+                </div>
+            </div></div>
+            <div class="col-lg-4"><div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h3 class="h4">Enterprise</h3>
+                    <p class="text-secondary">Grandes operações e requisitos específicos.</p>
+                    <p class="price">Sob consulta</p>
+                    <ul class="list-unstyled flex-grow-1 mt-2">
+                        <li>✅ Condomínios <strong>ilimitados</strong></li>
+                        <li>✅ Tudo do Business</li>
+                        <li>✅ SLA e suporte dedicado</li>
+                        <li>✅ Domínio e marca próprios</li>
+                        <li>✅ Exportação e integrações</li>
+                        <li>✅ Onboarding assistido</li>
+                    </ul>
+                    <a href="mailto:comercial@condomanager.pt" class="btn btn-outline-primary mt-3">Falar com vendas</a>
+                </div>
+            </div></div>
+        </div>
+    </div>
+</section>
+
+<!-- LEGAL -->
+<section id="legal" class="container py-5">
+    <div class="row justify-content-center"><div class="col-lg-9 text-center">
+        <h2 class="mb-3">Construído sobre a lei portuguesa</h2>
+        <p class="text-secondary">
+            O motor de quotas e de votações segue o regime da propriedade horizontal: rateio e voto por
+            <strong>permilagem</strong> (Art.º 1424.º), fundo comum de reserva obrigatório, e as maiorias da
+            <strong>Lei 8/2022</strong> (simples, sem oposição, 2/3, unanimidade). Convocatórias e notificações
+            de deliberações são admissíveis por correio eletrónico.
+        </p>
+    </div></div>
+</section>
+
+<footer class="bg-dark text-light py-4" data-bs-theme="dark">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="mb-0">© 2026 CondoManager — Sistema de Gestão de Condomínios (SaaS)</span>
+        <a href="https://github.com/pedropdvp/condomanager" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm">Ver código no GitHub</a>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_BASE = window.CONDO_API_BASE || '';
-    if (localStorage.getItem('token')) {
-        window.location.href = 'app.html';
-    }
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const out = document.getElementById('resultado');
-        out.innerHTML = '<span class="text-muted">A autenticar...</span>';
-        try {
-            const resp = await fetch(API_BASE + '/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: document.getElementById('email').value,
-                    password: document.getElementById('password').value
-                })
-            });
-            if (!resp.ok) {
-                out.innerHTML = '<div class="alert alert-danger py-2">Credenciais inválidas.</div>';
-                return;
-            }
-            const dados = await resp.json();
-            localStorage.setItem('token', dados.token);
-            localStorage.setItem('nome', dados.nome);
-            localStorage.setItem('perfis', JSON.stringify(dados.perfis));
-            window.location.href = 'app.html';
-        } catch (err) {
-            out.innerHTML = '<div class="alert alert-danger py-2">Erro de ligação ao servidor.</div>';
-        }
+    const html = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) html.setAttribute('data-bs-theme', saved);
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const next = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-bs-theme', next);
+        localStorage.setItem('theme', next);
     });
 </script>
 </body>
