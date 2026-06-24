@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: condomanager
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    # DB_PARAMS permite alternar para um MySQL gerido com TLS (TiDB/Aiven) sem mudar código.
+    # Default (dev local): sem SSL e cria a BD se não existir.
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:condomanager}?${DB_PARAMS:useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true}
+    username: ${DB_USER:condomanager}
+    password: ${DB_PASSWORD:condomanager}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # O esquema é da responsabilidade do Flyway; o Hibernate apenas valida.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:10MB}
+      max-request-size: ${MAX_REQUEST_SIZE:10MB}
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_AUTH:true}
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+
+app:
+  storage:
+    # Pasta base para os ficheiros de documentos (filesystem local).
+    documentos: ${DOCUMENTOS_DIR:${user.home}/.condomanager/documentos}
+  mail:
+    # Quando false (default), os emails são apenas registados no log (dev sem SMTP).
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:nao-responder@condomanager.local}
+  recuperacao-password:
+    # Validade do token de recuperação de password, em minutos.
+    expiracao-minutos: ${RESET_TOKEN_EXP_MIN:60}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+security:
+  jwt:
+    # Em produção, definir JWT_SECRET (>= 32 caracteres) por variável de ambiente.
+    secret: ${JWT_SECRET:dev-secret-troque-isto-em-producao-32+caracteres-1234567890}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000} # 1 hora
+
+logging:
+  level:
+    org.hibernate.SQL: info

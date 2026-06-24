@@ -1,0 +1,19 @@
+# Ordem de Desenvolvimento
+1. Autenticação
+2. Empresas
+3. Condomínios
+4. Edifícios
+5. Frações
+6. Condóminos
+7. Utilizadores
+8. Pagamentos
+9. Despesas
+10. Documentos
+11. Atas
+12. Reuniões
+13. Votações
+14. Comunicação
+15. Ocorrências
+16. Dashboard
+17. Relatórios
+18. Auditoria

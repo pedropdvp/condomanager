@@ -1,0 +1,31 @@
+# =====================================================================
+# Unidade systemd — execução do CondoManager como serviço (alternativa
+# ao Docker, jar nativo). Colocar em /etc/systemd/system/condomanager.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now condomanager
+# Segredos em /etc/condomanager/condomanager.env (chmod 600).
+# =====================================================================
+[Unit]
+Description=CondoManager SaaS (Spring Boot)
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=condomanager
+Group=condomanager
+WorkingDirectory=/opt/condomanager
+EnvironmentFile=/etc/condomanager/condomanager.env
+ExecStart=/usr/bin/java -XX:MaxRAMPercentage=75 -XX:+UseG1GC -jar /opt/condomanager/condomanager.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+
+# Hardening.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/condomanager/data
+
+[Install]
+WantedBy=multi-user.target

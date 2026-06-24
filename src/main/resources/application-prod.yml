@@ -1,0 +1,34 @@
+# Perfil de PRODUÇÃO.
+# O DataInitializer (@Profile("dev")) NÃO corre aqui — não há dados semeados.
+# Todas as credenciais/segredos vêm de variáveis de ambiente (ver deploy/DEPLOY.md).
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate          # o esquema é da responsabilidade do Flyway
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+server:
+  # Render (e outros PaaS) injetam a porta via $PORT; cair para SERVER_PORT e depois 8080.
+  port: ${PORT:${SERVER_PORT:8080}}
+  # A aplicação corre atrás do Nginx (TLS termina no Nginx); honrar os cabeçalhos X-Forwarded-*.
+  forward-headers-strategy: framework
+  shutdown: graceful
+
+# Em produção o JWT_SECRET é OBRIGATÓRIO (sem default) — a app não arranca sem ele.
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+logging:
+  level:
+    root: info
+    org.hibernate.SQL: warn
+  file:
+    name: ${LOG_DIR:/app/data/logs}/condomanager.log

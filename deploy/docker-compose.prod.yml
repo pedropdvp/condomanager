@@ -1,0 +1,55 @@
+# =====================================================================
+# CondoManager — stack de PRODUÇÃO (app + MySQL).
+# O Nginx + SSL correm no host (ver deploy/nginx e deploy/DEPLOY.md), não aqui.
+# Uso:  docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod up -d
+# =====================================================================
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: condomanager:latest
+    container_name: condomanager-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-condomanager}
+      DB_USER: ${DB_USER:-condomanager}
+      DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env.prod}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET (>=32 chars) no .env.prod}
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+    ports:
+      - "127.0.0.1:8080:8080"   # exposto apenas ao loopback; o Nginx faz o proxy
+    volumes:
+      - condomanager-data:/app/data
+
+  mysql:
+    image: mysql:8.0
+    container_name: condomanager-mysql-prod
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-condomanager}
+      MYSQL_USER: ${DB_USER:-condomanager}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env.prod}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?defina DB_ROOT_PASSWORD no .env.prod}
+    volumes:
+      - condomanager-mysql-prod:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  condomanager-data:
+  condomanager-mysql-prod:

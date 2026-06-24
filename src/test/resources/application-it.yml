@@ -1,0 +1,27 @@
+# Perfil de testes de integração (Testcontainers MySQL).
+# O datasource é injetado dinamicamente por @DynamicPropertySource (ver AbstractMySqlIT).
+# O perfil 'it' NÃO ativa o DataInitializer (@Profile("dev")), garantindo um esquema limpo.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate          # valida o mapeamento das entidades contra o esquema Flyway
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+app:
+  mail:
+    enabled: false                # nunca contacta SMTP real durante os testes
+  storage:
+    documentos: ${java.io.tmpdir}/condomanager-it/documentos
+
+security:
+  jwt:
+    secret: test-secret-com-32-ou-mais-caracteres-abcdefghij
+    expiration-ms: 3600000
+
+logging:
+  level:
+    org.hibernate.SQL: warn
+    org.flywaydb: info

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              name="relatorio_quotas" pageWidth="595" pageHeight="842"
+              columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+
+    <parameter name="CONDOMINIO_NOME" class="java.lang.String"/>
+
+    <field name="fracao" class="java.lang.String"/>
+    <field name="periodo" class="java.lang.String"/>
+    <field name="valor" class="java.math.BigDecimal"/>
+    <field name="estado" class="java.lang.String"/>
+
+    <title>
+        <band height="50">
+            <textField>
+                <reportElement x="0" y="0" width="555" height="26"/>
+                <textElement>
+                    <font size="16" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Relatório de Quotas — " + $P{CONDOMINIO_NOME}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="30" width="555" height="14"/>
+                <textElement>
+                    <font size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Gerado em " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date())]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+
+    <columnHeader>
+        <band height="20">
+            <staticText>
+                <reportElement x="0" y="0" width="160" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <textElement><font isBold="true"/></textElement>
+                <text><![CDATA[Fração]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="160" y="0" width="120" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <textElement><font isBold="true"/></textElement>
+                <text><![CDATA[Período]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="280" y="0" width="135" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <textElement textAlignment="Right"><font isBold="true"/></textElement>
+                <text><![CDATA[Valor (€)]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="415" y="0" width="140" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <textElement><font isBold="true"/></textElement>
+                <text><![CDATA[Estado]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+
+    <detail>
+        <band height="18">
+            <textField>
+                <reportElement x="0" y="0" width="160" height="16"/>
+                <textFieldExpression><![CDATA[$F{fracao}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="160" y="0" width="120" height="16"/>
+                <textFieldExpression><![CDATA[$F{periodo}]]></textFieldExpression>
+            </textField>
+            <textField pattern="#,##0.00">
+                <reportElement x="280" y="0" width="135" height="16"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA[$F{valor}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="415" y="0" width="140" height="16"/>
+                <textFieldExpression><![CDATA[$F{estado}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+
+    <summary>
+        <band height="30">
+            <textField>
+                <reportElement x="0" y="8" width="555" height="16"/>
+                <textElement><font size="9" isItalic="true"/></textElement>
+                <textFieldExpression><![CDATA["Total de quotas: " + $V{REPORT_COUNT}]]></textFieldExpression>
+            </textField>
+        </band>
+    </summary>
+</jasperReport>
