@@ -42,12 +42,14 @@
                 <text><![CDATA[Período]]></text>
             </staticText>
             <staticText>
-                <reportElement x="280" y="0" width="135" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <reportElement x="280" y="0" width="110" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <box rightPadding="6"/>
                 <textElement textAlignment="Right"><font isBold="true"/></textElement>
                 <text><![CDATA[Valor (€)]]></text>
             </staticText>
             <staticText>
-                <reportElement x="415" y="0" width="140" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <reportElement x="400" y="0" width="155" height="18" backcolor="#E0E0E0" mode="Opaque"/>
+                <box leftPadding="8"/>
                 <textElement><font isBold="true"/></textElement>
                 <text><![CDATA[Estado]]></text>
             </staticText>
@@ -65,12 +67,14 @@
                 <textFieldExpression><![CDATA[$F{periodo}]]></textFieldExpression>
             </textField>
             <textField pattern="#,##0.00">
-                <reportElement x="280" y="0" width="135" height="16"/>
+                <reportElement x="280" y="0" width="110" height="16"/>
+                <box rightPadding="6"/>
                 <textElement textAlignment="Right"/>
                 <textFieldExpression><![CDATA[$F{valor}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="415" y="0" width="140" height="16"/>
+                <reportElement x="400" y="0" width="155" height="16"/>
+                <box leftPadding="8"/>
                 <textFieldExpression><![CDATA[$F{estado}]]></textFieldExpression>
             </textField>
         </band>
