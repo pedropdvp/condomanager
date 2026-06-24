@@ -18,16 +18,20 @@ services:
       # Segredo JWT gerado automaticamente pela Render (>=32 chars).
       - key: JWT_SECRET
         generateValue: true
-      # Base de dados MySQL externa — preencher no painel (sync:false = secretos).
+      # Base de dados MySQL externa — a Render vai pedir estes valores no painel.
+      # (TiDB Cloud: PORT=4000; ver docs/DEPLOY-RENDER.md.)
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        value: "3306"
+        sync: false
       - key: DB_NAME
         value: condomanager
       - key: DB_USER
         sync: false
       - key: DB_PASSWORD
+        sync: false
+      # Parâmetros da ligação JDBC (TLS). TiDB: sslMode=VERIFY_IDENTITY&serverTimezone=UTC
+      - key: DB_PARAMS
         sync: false
       # Email opcional (recuperação de password / convocatórias).
       - key: MAIL_ENABLED
