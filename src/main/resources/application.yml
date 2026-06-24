@@ -53,7 +53,8 @@ app:
     expiracao-minutos: ${RESET_TOKEN_EXP_MIN:60}
 
 server:
-  port: ${SERVER_PORT:8080}
+  # $PORT é injetado por PaaS (Render/Heroku) em qualquer perfil; cair para SERVER_PORT e 8080.
+  port: ${PORT:${SERVER_PORT:8080}}
 
 security:
   jwt:
