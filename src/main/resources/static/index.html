@@ -54,17 +54,34 @@
     <!-- ===== APP ===== -->
     <section id="appView" class="d-none">
         <ul class="nav nav-tabs mb-3">
-            <li class="nav-item"><button class="nav-link active" data-tab="condominios">Condomínios</button></li>
-            <li class="nav-item"><button class="nav-link" data-tab="votacoes">Votações</button></li>
+            <li class="nav-item"><button class="nav-link active" data-tab="dashboard">📊 Dashboard</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="condominios">🏢 Condomínios</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="votacoes">🗳️ Votações</button></li>
         </ul>
 
         <div id="alert" class="alert d-none" role="alert"></div>
 
+        <!-- Tab Dashboard -->
+        <div id="tab-dashboard">
+            <div id="kpis" class="row g-3 mb-4"></div>
+            <div class="row g-3">
+                <div class="col-lg-6"><div class="card"><div class="card-body">
+                    <h3 class="h6">Estrutura</h3><canvas id="chartEstrutura" height="170"></canvas></div></div></div>
+                <div class="col-lg-6"><div class="card"><div class="card-body">
+                    <h3 class="h6">Quotas por estado (nº)</h3><canvas id="chartQuotas" height="170"></canvas></div></div></div>
+                <div class="col-lg-12"><div class="card"><div class="card-body">
+                    <h3 class="h6">Valor de quotas por estado (€)</h3><canvas id="chartValor" height="90"></canvas></div></div></div>
+            </div>
+        </div>
+
         <!-- Tab Condomínios -->
-        <div id="tab-condominios">
+        <div id="tab-condominios" class="d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h5 mb-0">Condomínios</h2>
-                <button class="btn btn-sm btn-outline-primary" onclick="loadCondominios()">↻ Atualizar</button>
+                <div>
+                    <button class="btn btn-sm btn-success" onclick="openCondominio()">➕ Novo condomínio</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadCondominios()">↻</button>
+                </div>
             </div>
             <div id="condominiosTable" class="table-responsive"></div>
             <div id="detalhe" class="mt-4"></div>
@@ -82,52 +99,53 @@
     </section>
 </main>
 
-<footer class="container pb-4">
-    <span id="healthBadge" class="badge bg-secondary">serviço: …</span>
-</footer>
+<footer class="container pb-4"><span id="healthBadge" class="badge bg-secondary">serviço: …</span></footer>
+
+<!-- ===== MODAIS DE CRIAÇÃO ===== -->
+<div class="modal fade" id="modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modalTitle"></h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form id="modalForm"><div class="modal-body">
+        <div id="modalError" class="alert alert-danger d-none"></div>
+        <div id="modalFields"></div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </div></form>
+</div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 // ---------- Estado / helpers ----------
 const token = () => sessionStorage.getItem('cm_token');
+const PALETTE = ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#20c997','#fd7e14'];
 const LABELS = {
     id:'ID', nome:'Nome', morada:'Morada', orcamentoAnual:'Orçamento anual (€)',
     numero:'Nº', tipologia:'Tipologia', permilagem:'Permilagem (‰)', areaM2:'Área (m²)',
     fracaoId:'Fração', mes:'Mês', ano:'Ano', valor:'Valor (€)', estado:'Estado',
     nif:'NIF', email:'Email', telefone:'Telefone', tipo:'Tipo', bloco:'Bloco',
     numeroPisos:'Pisos', tema:'Tema', tipoMaioria:'Maioria', data:'Data', hora:'Hora',
-    local:'Local', ordemTrabalhos:'Ordem de trabalhos', condominioId:'Condomínio',
-    edificioId:'Edifício', reuniaoId:'Reunião'
+    local:'Local', ordemTrabalhos:'Ordem de trabalhos'
 };
-const HIDE = new Set(['idEmpresa','createdAt','updatedAt','dataInicio','dataFim']);
-const money = ['orcamentoAnual','valor'];
+const HIDE = new Set(['idEmpresa','createdAt','updatedAt','dataInicio','dataFim','condominioId','edificioId','reuniaoId']);
+const MONEY = ['orcamentoAnual','valor'];
+const charts = {};
+const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modal'));
+let currentCond = null;
 
 function showAlert(msg, type='info') {
     const el = document.getElementById('alert');
-    el.className = `alert alert-${type}`;
-    el.textContent = msg;
-    el.classList.remove('d-none');
-    setTimeout(() => el.classList.add('d-none'), 4000);
+    el.className = `alert alert-${type}`; el.textContent = msg;
+    el.classList.remove('d-none'); setTimeout(() => el.classList.add('d-none'), 4500);
 }
-
-async function api(path) {
-    const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } });
-    if (res.status === 401) { logout(); throw new Error('Sessão expirada — entre novamente.'); }
-    if (!res.ok) throw new Error('Erro ' + res.status);
-    return res.json();
-}
-
-function rows(data) {
-    if (Array.isArray(data)) return data;
-    return data.conteudo || data.content || [];
-}
-
+function rows(data) { return Array.isArray(data) ? data : (data.conteudo || data.content || []); }
 function fmt(key, val) {
     if (val === null || val === undefined) return '—';
-    if (money.includes(key) && typeof val === 'number') return val.toFixed(2) + ' €';
+    if (MONEY.includes(key) && typeof val === 'number') return val.toFixed(2) + ' €';
     return String(val);
 }
-
 function table(items, actionsFn) {
     if (!items.length) return '<p class="text-secondary">Sem registos.</p>';
     const keys = Object.keys(items[0]).filter(k => !HIDE.has(k));
@@ -143,6 +161,27 @@ function table(items, actionsFn) {
     });
     return h + '</tbody></table>';
 }
+async function api(path) {
+    const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } });
+    if (res.status === 401) { logout(); throw new Error('Sessão expirada — entre novamente.'); }
+    if (!res.ok) throw new Error('Erro ' + res.status);
+    return res.json();
+}
+async function apiPost(path, body) {
+    const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
+        body: JSON.stringify(body)
+    });
+    const txt = await res.text();
+    let data; try { data = JSON.parse(txt); } catch { data = txt; }
+    if (!res.ok) {
+        const msg = (data && (data.message || data.mensagem || data.erro || data.detail)) || ('Erro ' + res.status);
+        throw new Error(msg);
+    }
+    return data;
+}
+function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
 // ---------- Auth ----------
 async function doLogin(email, password) {
@@ -156,16 +195,13 @@ async function doLogin(email, password) {
     sessionStorage.setItem('cm_user', JSON.stringify(data.utilizador));
     showApp();
 }
-
 function logout() {
-    sessionStorage.removeItem('cm_token');
-    sessionStorage.removeItem('cm_user');
+    sessionStorage.clear();
     document.getElementById('appView').classList.add('d-none');
     document.getElementById('loginView').classList.remove('d-none');
     document.getElementById('logoutBtn').classList.add('d-none');
     document.getElementById('userBadge').classList.add('d-none');
 }
-
 function showApp() {
     const user = JSON.parse(sessionStorage.getItem('cm_user') || '{}');
     document.getElementById('loginView').classList.add('d-none');
@@ -174,71 +210,108 @@ function showApp() {
     const badge = document.getElementById('userBadge');
     badge.textContent = `${user.nome || ''} · ${(user.perfis || []).join(', ')}`;
     badge.classList.remove('d-none');
-    loadCondominios();
+    loadDashboard();
 }
 
-// ---------- Dados ----------
+// ---------- Dashboard ----------
+function kpi(label, value, color) {
+    return `<div class="col-6 col-md-4 col-lg-2"><div class="card text-bg-${color} h-100"><div class="card-body py-2">
+        <div class="small">${label}</div><div class="h4 mb-0">${value}</div></div></div></div>`;
+}
+function chart(id, type, labels, data, label) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+        type,
+        data: { labels, datasets: [{ label, data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]) }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type !== 'bar' } } }
+    });
+}
+async function loadDashboard() {
+    try {
+        const d = await api('/api/v1/dashboard');
+        const e = d.estrutura, f = d.financeiro;
+        document.getElementById('kpis').innerHTML =
+            kpi('Condomínios', e.condominios, 'primary') +
+            kpi('Edifícios', e.edificios, 'info') +
+            kpi('Frações', e.fracoes, 'secondary') +
+            kpi('Condóminos', e.condominos, 'success') +
+            kpi('Despesas (€)', Number(f.totalDespesas || 0).toFixed(2), 'warning') +
+            kpi('Reuniões', d.reunioesAgendadas, 'dark');
+        chart('chartEstrutura', 'bar',
+            ['Condomínios', 'Edifícios', 'Frações', 'Condóminos', 'Utilizadores'],
+            [e.condominios, e.edificios, e.fracoes, e.condominos, e.utilizadores], 'Total');
+        const qc = f.quotasContagem || {};
+        chart('chartQuotas', 'doughnut', Object.keys(qc), Object.values(qc), 'Quotas');
+        const qv = f.quotasValor || {};
+        chart('chartValor', 'bar', Object.keys(qv), Object.values(qv).map(Number), '€');
+    } catch (e) { showAlert(e.message, 'danger'); }
+}
+
+// ---------- Condomínios ----------
 async function loadCondominios() {
     try {
         const data = await api('/api/v1/condominios?size=50');
-        document.getElementById('condominiosTable').innerHTML = table(rows(data), c => `
-            <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-secondary" onclick="loadFracoes(${c.id},'${esc(c.nome)}')">Frações</button>
-              <button class="btn btn-outline-secondary" onclick="loadQuotas(${c.id},'${esc(c.nome)}')">Quotas</button>
-              <button class="btn btn-outline-primary" onclick="baixar(${c.id},'pdf')">PDF</button>
-              <button class="btn btn-outline-success" onclick="baixar(${c.id},'excel')">Excel</button>
-            </div>`);
+        document.getElementById('condominiosTable').innerHTML = table(rows(data), c =>
+            `<button class="btn btn-sm btn-primary" onclick="abrirCondominio(${c.id},'${esc(c.nome)}')">Abrir</button>`);
         document.getElementById('detalhe').innerHTML = '';
     } catch (e) { showAlert(e.message, 'danger'); }
 }
-
-async function loadFracoes(cid, nome) {
-    try {
-        const data = await api(`/api/v1/fracoes?condominioId=${cid}&size=50`);
-        document.getElementById('detalhe').innerHTML =
-            `<h3 class="h6">Frações — ${nome}</h3>` + table(rows(data));
-    } catch (e) { showAlert(e.message, 'danger'); }
+function abrirCondominio(id, nome) {
+    currentCond = { id, nome };
+    document.getElementById('detalhe').innerHTML = `
+      <div class="card"><div class="card-body">
+        <h3 class="h6">${nome}</h3>
+        <div class="btn-group btn-group-sm flex-wrap mb-3">
+          <button class="btn btn-outline-secondary" onclick="loadFracoes()">Frações</button>
+          <button class="btn btn-outline-secondary" onclick="loadQuotas()">Quotas</button>
+          <button class="btn btn-success" onclick="openEdificio()">➕ Edifício</button>
+          <button class="btn btn-success" onclick="openFracao()">➕ Fração</button>
+          <button class="btn btn-warning" onclick="openGerarQuotas()">➕ Gerar quotas</button>
+          <button class="btn btn-outline-primary" onclick="baixar('pdf')">PDF</button>
+          <button class="btn btn-outline-success" onclick="baixar('excel')">Excel</button>
+        </div>
+        <div id="subDetalhe"></div>
+      </div></div>`;
+    loadFracoes();
 }
-
-async function loadQuotas(cid, nome) {
-    try {
-        const data = await api(`/api/v1/quotas?condominioId=${cid}&size=50`);
-        document.getElementById('detalhe').innerHTML =
-            `<h3 class="h6">Quotas — ${nome}</h3>` + table(rows(data));
-    } catch (e) { showAlert(e.message, 'danger'); }
+async function loadFracoes() {
+    const data = await api(`/api/v1/fracoes?condominioId=${currentCond.id}&size=50`);
+    document.getElementById('subDetalhe').innerHTML = '<h4 class="h6">Frações</h4>' + table(rows(data));
 }
-
-async function baixar(cid, fmt) {
+async function loadQuotas() {
+    const data = await api(`/api/v1/quotas?condominioId=${currentCond.id}&size=50`);
+    document.getElementById('subDetalhe').innerHTML = '<h4 class="h6">Quotas</h4>' + table(rows(data));
+}
+async function baixar(fmt) {
     try {
-        const path = fmt === 'pdf' ? `/api/v1/relatorios/quotas?condominioId=${cid}`
-                                   : `/api/v1/relatorios/quotas/excel?condominioId=${cid}`;
+        const path = fmt === 'pdf'
+            ? `/api/v1/relatorios/quotas?condominioId=${currentCond.id}`
+            : `/api/v1/relatorios/quotas/excel?condominioId=${currentCond.id}`;
         const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } });
         if (!res.ok) throw new Error('Erro ' + res.status);
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `relatorio-quotas-${cid}.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`;
-        document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
+        a.href = url; a.download = `relatorio-quotas-${currentCond.id}.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`;
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
         showAlert('Relatório descarregado.', 'success');
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
+// ---------- Votações ----------
 async function loadVotacoes() {
     try {
         const data = await api('/api/v1/votacoes?size=50');
-        document.getElementById('votacoesTable').innerHTML = table(rows(data), v => `
-            <button class="btn btn-sm btn-outline-primary" onclick="loadResultado(${v.id})">Resultado</button>`);
+        document.getElementById('votacoesTable').innerHTML = table(rows(data), v =>
+            `<button class="btn btn-sm btn-outline-primary" onclick="loadResultado(${v.id})">Resultado</button>`);
         document.getElementById('resultadoVotacao').innerHTML = '';
     } catch (e) { showAlert(e.message, 'danger'); }
 }
-
 async function loadResultado(id) {
     try {
         const r = await api(`/api/v1/votacoes/${id}/resultado`);
-        const aprov = r.aprovado
-            ? '<span class="badge bg-success">APROVADO</span>'
-            : '<span class="badge bg-danger">REPROVADO</span>';
+        const aprov = r.aprovado ? '<span class="badge bg-success">APROVADO</span>'
+                                 : '<span class="badge bg-danger">REPROVADO</span>';
         document.getElementById('resultadoVotacao').innerHTML = `
           <div class="card"><div class="card-body">
             <h3 class="h6">Resultado — ${esc(r.tema)} ${aprov}</h3>
@@ -251,54 +324,131 @@ async function loadResultado(id) {
               <tr><th>Abstenção</th><td>${r.somaAbstencao} ‰</td></tr>
               <tr><th>Nº de votos</th><td>${r.numeroVotos}</td></tr>
             </table>
-            <p class="small text-secondary mb-0">A contagem é por <strong>permilagem</strong> (peso da fração), não por número de pessoas — regime da propriedade horizontal (Lei 8/2022).</p>
+            <p class="small text-secondary mb-0">Contagem por <strong>permilagem</strong> (peso da fração), não por nº de pessoas — Lei 8/2022.</p>
           </div></div>`;
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
-function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+// ---------- Formulários (modais) ----------
+let onSubmitModal = null;
+function field(name, label, type='text', extra='') {
+    return `<div class="mb-2"><label class="form-label small">${label}</label>
+        <input name="${name}" type="${type}" class="form-control form-control-sm" ${extra}></div>`;
+}
+function selectField(name, label, options) {
+    let o = options.map(x => `<option value="${x.value}">${x.label}</option>`).join('');
+    return `<div class="mb-2"><label class="form-label small">${label}</label>
+        <select name="${name}" class="form-select form-select-sm">${o}</select></div>`;
+}
+function openModal(title, fieldsHtml, submitFn) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalFields').innerHTML = fieldsHtml;
+    document.getElementById('modalError').classList.add('d-none');
+    onSubmitModal = submitFn;
+    modal().show();
+}
+function formData() {
+    const f = document.getElementById('modalForm');
+    const o = {};
+    new FormData(f).forEach((v, k) => o[k] = v);
+    return o;
+}
+
+function openCondominio() {
+    openModal('Novo condomínio',
+        field('nome', 'Nome', 'text', 'required') +
+        field('morada', 'Morada') +
+        field('orcamentoAnual', 'Orçamento anual (€)', 'number', 'step="0.01" min="0" required'),
+        async () => {
+            const d = formData();
+            await apiPost('/api/v1/condominios', { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) });
+            showAlert('Condomínio criado.', 'success'); loadCondominios(); loadDashboard();
+        });
+}
+function openEdificio() {
+    openModal(`Novo edifício — ${currentCond.nome}`,
+        field('nome', 'Nome', 'text', 'required') +
+        field('bloco', 'Bloco') +
+        field('numeroPisos', 'Nº de pisos', 'number', 'min="0"'),
+        async () => {
+            const d = formData();
+            await apiPost('/api/v1/edificios', {
+                condominioId: currentCond.id, nome: d.nome, bloco: d.bloco,
+                numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null
+            });
+            showAlert('Edifício criado.', 'success'); loadDashboard();
+        });
+}
+async function openFracao() {
+    let eds = rows(await api(`/api/v1/edificios?condominioId=${currentCond.id}&size=50`));
+    if (!eds.length) { showAlert('Crie primeiro um edifício neste condomínio.', 'warning'); return; }
+    openModal(`Nova fração — ${currentCond.nome}`,
+        selectField('edificioId', 'Edifício', eds.map(e => ({ value: e.id, label: e.nome }))) +
+        field('numero', 'Nº da fração', 'text', 'required') +
+        field('tipologia', 'Tipologia (ex.: T2)') +
+        field('permilagem', 'Permilagem (‰, 0–1000)', 'number', 'step="0.0001" min="0" max="1000" required') +
+        field('areaM2', 'Área (m²)', 'number', 'step="0.01" min="0"'),
+        async () => {
+            const d = formData();
+            await apiPost('/api/v1/fracoes', {
+                condominioId: currentCond.id, edificioId: Number(d.edificioId),
+                numero: d.numero, tipologia: d.tipologia,
+                permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null
+            });
+            showAlert('Fração criada.', 'success'); loadFracoes(); loadDashboard();
+        });
+}
+function openGerarQuotas() {
+    const now = new Date();
+    openModal(`Gerar quotas — ${currentCond.nome}`,
+        field('mes', 'Mês (1–12)', 'number', `min="1" max="12" value="${now.getMonth() + 1}" required`) +
+        field('ano', 'Ano', 'number', `min="2000" max="2100" value="${now.getFullYear()}" required`),
+        async () => {
+            const d = formData();
+            const r = await apiPost('/api/v1/quotas/gerar', {
+                condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano)
+            });
+            showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success');
+            loadQuotas(); loadDashboard();
+        });
+}
+
+document.getElementById('modalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('modalError'); err.classList.add('d-none');
+    try { await onSubmitModal(); modal().hide(); }
+    catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); }
+});
 
 // ---------- Health ----------
 async function loadHealth() {
+    const b = document.getElementById('healthBadge');
     try {
-        const r = await fetch('/api/v1/health');
-        const d = await r.json();
-        const b = document.getElementById('healthBadge');
-        b.className = 'badge bg-success';
-        b.textContent = 'serviço: ' + (d.status || 'UP');
-    } catch {
-        const b = document.getElementById('healthBadge');
-        b.className = 'badge bg-danger'; b.textContent = 'serviço: indisponível';
-    }
+        const d = await (await fetch('/api/v1/health')).json();
+        b.className = 'badge bg-success'; b.textContent = 'serviço: ' + (d.status || 'UP');
+    } catch { b.className = 'badge bg-danger'; b.textContent = 'serviço: indisponível'; }
 }
 
 // ---------- Eventos ----------
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const err = document.getElementById('loginError');
-    err.classList.add('d-none');
-    const btn = document.getElementById('loginBtn');
-    btn.disabled = true; btn.textContent = 'A entrar…';
-    try {
-        await doLogin(document.getElementById('email').value, document.getElementById('password').value);
-    } catch (ex) {
-        err.textContent = ex.message; err.classList.remove('d-none');
-    } finally {
-        btn.disabled = false; btn.textContent = 'Entrar';
-    }
+    const err = document.getElementById('loginError'); err.classList.add('d-none');
+    const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.textContent = 'A entrar…';
+    try { await doLogin(document.getElementById('email').value, document.getElementById('password').value); }
+    catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); }
+    finally { btn.disabled = false; btn.textContent = 'Entrar'; }
 });
-
 document.getElementById('logoutBtn').addEventListener('click', logout);
-
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('[data-tab]').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     const tab = b.dataset.tab;
-    document.getElementById('tab-condominios').classList.toggle('d-none', tab !== 'condominios');
-    document.getElementById('tab-votacoes').classList.toggle('d-none', tab !== 'votacoes');
+    ['dashboard', 'condominios', 'votacoes'].forEach(t =>
+        document.getElementById('tab-' + t).classList.toggle('d-none', t !== tab));
+    if (tab === 'dashboard') loadDashboard();
+    if (tab === 'condominios') loadCondominios();
     if (tab === 'votacoes') loadVotacoes();
 }));
-
 const themeSaved = localStorage.getItem('theme');
 if (themeSaved) document.documentElement.dataset.bsTheme = themeSaved;
 document.getElementById('themeToggle').addEventListener('click', () => {
