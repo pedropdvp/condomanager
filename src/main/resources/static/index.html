@@ -358,7 +358,12 @@ async function loadDocumentos() {
 async function loadAtasDe(reuniaoId) {
     currentReuniaoId = reuniaoId;
     cache.atas = rows(await apiGet(`/api/v1/atas?reuniaoId=${reuniaoId}&size=50`));
-    subView('Atas da reunião #' + reuniaoId,
+    renderAtas();
+}
+// Render a partir de cache.atas (sem refazer fetch). Usado após criar/editar/anexar/apagar
+// para refletir a mudança de imediato, imune a atrasos de replicação (read-after-write).
+function renderAtas() {
+    subView('Atas da reunião #' + currentReuniaoId,
         (can('ATAS','CRIAR') ? btn('btn-success','➕ Nova ata','openAta()') : '') + btn('btn-outline-secondary','‹ Voltar às reuniões','loadReunioes()'),
         table(cache.atas, a => (a.temFicheiro ? btn('btn-outline-primary','Descarregar',`downloadFile('/api/v1/atas/${a.id}/download','${esc(a.titulo || 'ata')}.pdf')`) : '') +
             (can('ATAS','EDITAR') ? btn('btn-outline-info','Anexar ficheiro',`anexarAta(${a.id})`) + btn('btn-outline-secondary','Editar',`editAta(${a.id})`) : '') +
@@ -530,18 +535,18 @@ function openAta() {
     const r = (cache.reun || []).find(x => x.id === currentReuniaoId);
     const dataDefault = r && r.data ? r.data : '';
     openModal('Nova ata', field('titulo','Título','text','required') + field('descricao','Descrição') + field('dataReuniao','Data da reunião','date','required',dataDefault),
-        async () => { const d = formData(); if (!d.dataReuniao) throw new Error('A data da reunião é obrigatória.'); await apiPost('/api/v1/atas', { reuniaoId: currentReuniaoId, titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao }); showAlert('Ata criada. Pode anexar o ficheiro.', 'success'); loadAtasDe(currentReuniaoId); });
+        async () => { const d = formData(); if (!d.dataReuniao) throw new Error('A data da reunião é obrigatória.'); const nova = await apiPost('/api/v1/atas', { reuniaoId: currentReuniaoId, titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao }); showAlert('Ata criada. Pode anexar o ficheiro.', 'success'); cache.atas = [nova, ...(cache.atas || [])]; renderAtas(); });
 }
 function editAta(id) {
     const a = cache.atas.find(x => x.id === id);
     openModal('Editar ata', field('titulo','Título','text','required',esc(a.titulo || '')) + field('descricao','Descrição','text','',esc(a.descricao || '')) + field('dataReuniao','Data da reunião','date','',a.dataReuniao || ''),
-        async () => { const d = formData(); await apiPut('/api/v1/atas/' + id, { titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao || null }); showAlert('Ata atualizada.', 'success'); loadAtasDe(currentReuniaoId); });
+        async () => { const d = formData(); const upd = await apiPut('/api/v1/atas/' + id, { titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao || null }); showAlert('Ata atualizada.', 'success'); cache.atas = (cache.atas || []).map(a => a.id === id ? upd : a); renderAtas(); });
 }
 function anexarAta(id) {
     openModal('Anexar ficheiro à ata', field('ficheiro','Ficheiro (PDF, etc.)','file','required'),
-        async () => { const f = document.getElementById('modalForm'); if (!f.ficheiro.files.length) throw new Error('Escolha um ficheiro.'); const fd = new FormData(); fd.append('ficheiro', f.ficheiro.files[0]); await apiUpload('/api/v1/atas/' + id + '/ficheiro', fd); showAlert('Ficheiro anexado.', 'success'); loadAtasDe(currentReuniaoId); });
+        async () => { const f = document.getElementById('modalForm'); if (!f.ficheiro.files.length) throw new Error('Escolha um ficheiro.'); const fd = new FormData(); fd.append('ficheiro', f.ficheiro.files[0]); const upd = await apiUpload('/api/v1/atas/' + id + '/ficheiro', fd); showAlert('Ficheiro anexado.', 'success'); cache.atas = (cache.atas || []).map(a => a.id === id ? upd : a); renderAtas(); });
 }
-async function apagarAta(id) { if (!confirm('Apagar esta ata?')) return; try { await apiDel('/api/v1/atas/' + id); showAlert('Ata apagada.', 'success'); loadAtasDe(currentReuniaoId); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarAta(id) { if (!confirm('Apagar esta ata?')) return; try { await apiDel('/api/v1/atas/' + id); showAlert('Ata apagada.', 'success'); cache.atas = (cache.atas || []).filter(a => a.id !== id); renderAtas(); } catch (e) { showAlert(e.message, 'danger'); } }
 
 document.getElementById('modalForm').addEventListener('submit', async (e) => { e.preventDefault(); const err = document.getElementById('modalError'); err.classList.add('d-none'); try { await onSubmitModal(); modal().hide(); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); } });
 
