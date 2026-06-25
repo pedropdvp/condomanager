@@ -39,7 +39,7 @@ public class DocumentoController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('DOCUMENTOS', 'CRIAR')")
     public ResponseEntity<DocumentoResponse> upload(@RequestParam Long condominioId,
                                                     @RequestParam String nome,
                                                     @RequestParam(required = false) String tipo,
@@ -57,7 +57,7 @@ public class DocumentoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('DOCUMENTOS', 'CONSULTAR')")
     public PageResponse<DocumentoResponse> listar(@RequestParam(required = false) Long condominioId,
                                                   @RequestParam(required = false) String nome,
                                                   Pageable pageable) {
@@ -65,13 +65,13 @@ public class DocumentoController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('DOCUMENTOS', 'CONSULTAR')")
     public DocumentoResponse obter(@PathVariable Long id) {
         return service.obterPorId(id);
     }
 
     @GetMapping("/{id}/download")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('DOCUMENTOS', 'CONSULTAR')")
     public ResponseEntity<Resource> download(@PathVariable Long id) {
         ConteudoDocumento conteudo = service.descarregar(id);
         String nomeFicheiro = StringUtils.cleanPath(conteudo.nome());
@@ -82,7 +82,7 @@ public class DocumentoController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('DOCUMENTOS', 'APAGAR')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         service.eliminar(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

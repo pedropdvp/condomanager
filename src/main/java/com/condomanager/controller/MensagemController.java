@@ -25,7 +25,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/mensagens")
-@PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
 public class MensagemController {
 
     private final MensagemService service;
@@ -35,6 +34,7 @@ public class MensagemController {
     }
 
     @PostMapping
+    @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CRIAR')")
     public ResponseEntity<MensagemResponse> enviar(@Valid @RequestBody MensagemCreateDTO dto,
                                                    UriComponentsBuilder uriBuilder) {
         MensagemResponse criada = service.enviar(dto);
@@ -43,26 +43,31 @@ public class MensagemController {
     }
 
     @GetMapping("/recebidas")
+    @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CONSULTAR')")
     public PageResponse<MensagemResponse> recebidas(Pageable pageable) {
         return PageResponse.de(service.caixaDeEntrada(pageable));
     }
 
     @GetMapping("/enviadas")
+    @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CONSULTAR')")
     public PageResponse<MensagemResponse> enviadas(Pageable pageable) {
         return PageResponse.de(service.enviadas(pageable));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CONSULTAR')")
     public MensagemResponse obter(@PathVariable Long id) {
         return service.obterPorId(id);
     }
 
     @PutMapping("/{id}/lida")
+    @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CONSULTAR')")
     public MensagemResponse marcarLida(@PathVariable Long id) {
         return service.marcarComoLida(id);
     }
 
     @GetMapping("/nao-lidas/count")
+    @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CONSULTAR')")
     public Map<String, Long> naoLidas() {
         return Map.of("naoLidas", service.contarNaoLidas());
     }

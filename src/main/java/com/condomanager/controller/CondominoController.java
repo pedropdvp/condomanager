@@ -37,7 +37,7 @@ public class CondominoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('CONDOMINOS', 'CRIAR')")
     public ResponseEntity<CondominoResponse> criar(@Valid @RequestBody CondominoCreateDTO dto,
                                                    UriComponentsBuilder uriBuilder) {
         CondominoResponse criado = service.criar(dto);
@@ -46,26 +46,26 @@ public class CondominoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissaoService.pode('CONDOMINOS', 'CONSULTAR')")
     public PageResponse<CondominoResponse> listar(@RequestParam(required = false) Long fracaoId,
                                                   Pageable pageable) {
         return PageResponse.de(service.listar(fracaoId, pageable));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissaoService.pode('CONDOMINOS', 'CONSULTAR')")
     public CondominoResponse obter(@PathVariable Long id) {
         return service.obterPorId(id);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('CONDOMINOS', 'EDITAR')")
     public CondominoResponse atualizar(@PathVariable Long id, @Valid @RequestBody CondominoUpdateDTO dto) {
         return service.atualizar(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('CONDOMINOS', 'APAGAR')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         service.eliminar(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

@@ -33,7 +33,7 @@ public class PagamentoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('PAGAMENTOS', 'CRIAR')")
     public ResponseEntity<PagamentoResponse> registar(@Valid @RequestBody PagamentoCreateDTO dto,
                                                       UriComponentsBuilder uriBuilder) {
         PagamentoResponse criado = service.registar(dto);
@@ -42,14 +42,14 @@ public class PagamentoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissaoService.pode('PAGAMENTOS', 'CONSULTAR')")
     public PageResponse<PagamentoResponse> listar(@RequestParam(required = false) Long quotaId,
                                                   Pageable pageable) {
         return PageResponse.de(service.listar(quotaId, pageable));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissaoService.pode('PAGAMENTOS', 'CONSULTAR')")
     public PagamentoResponse obter(@PathVariable Long id) {
         return service.obterPorId(id);
     }

@@ -42,7 +42,7 @@ public class VotacaoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'CRIAR')")
     public ResponseEntity<VotacaoResponse> criar(@Valid @RequestBody VotacaoCreateDTO dto,
                                                  UriComponentsBuilder uriBuilder) {
         VotacaoResponse criada = votacaoService.criar(dto);
@@ -51,7 +51,7 @@ public class VotacaoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'CONSULTAR')")
     public PageResponse<VotacaoResponse> listar(@RequestParam(required = false) Long reuniaoId,
                                                 @RequestParam(required = false) EstadoVotacao estado,
                                                 Pageable pageable) {
@@ -59,45 +59,45 @@ public class VotacaoController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'CONSULTAR')")
     public VotacaoResponse obter(@PathVariable Long id) {
         return votacaoService.obterPorId(id);
     }
 
     @PostMapping("/{id}/abrir")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'EDITAR')")
     public VotacaoResponse abrir(@PathVariable Long id) {
         return votacaoService.abrir(id);
     }
 
     @PostMapping("/{id}/encerrar")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'EDITAR')")
     public VotacaoResponse encerrar(@PathVariable Long id) {
         return votacaoService.encerrar(id);
     }
 
     @GetMapping("/{id}/resultado")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'CONSULTAR')")
     public ResultadoVotacaoResponse resultado(@PathVariable Long id) {
         return votacaoService.resultado(id);
     }
 
     @PostMapping("/{id}/votos")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'CRIAR')")
     public ResponseEntity<VotoResponse> votar(@PathVariable Long id, @Valid @RequestBody VotoCreateDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(votoService.votar(id, dto));
     }
 
     /** Voto do próprio condómino autenticado. */
     @PostMapping("/{id}/votar")
-    @PreAuthorize("hasAnyRole('CONDOMINO', 'ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'CRIAR')")
     public ResponseEntity<VotoResponse> votarProprio(@PathVariable Long id,
                                                      @Valid @RequestBody VotoProprioDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(votoService.votarProprio(id, dto));
     }
 
     @GetMapping("/{id}/votos")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    @PreAuthorize("@permissaoService.pode('VOTACOES', 'CONSULTAR')")
     public PageResponse<VotoResponse> listarVotos(@PathVariable Long id, Pageable pageable) {
         return PageResponse.de(votoService.listar(id, pageable));
     }

@@ -44,7 +44,7 @@ public class AtaController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('ATAS', 'CRIAR')")
     public ResponseEntity<AtaResponse> criar(@Valid @RequestBody AtaCreateDTO dto,
                                              UriComponentsBuilder uriBuilder) {
         AtaResponse criada = service.criar(dto);
@@ -53,7 +53,7 @@ public class AtaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('ATAS', 'CONSULTAR')")
     public PageResponse<AtaResponse> listar(@RequestParam(required = false) Long reuniaoId,
                                             @RequestParam(required = false) String titulo,
                                             Pageable pageable) {
@@ -61,19 +61,19 @@ public class AtaController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('ATAS', 'CONSULTAR')")
     public AtaResponse obter(@PathVariable Long id) {
         return service.obterPorId(id);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('ATAS', 'EDITAR')")
     public AtaResponse atualizar(@PathVariable Long id, @Valid @RequestBody AtaUpdateDTO dto) {
         return service.atualizar(id, dto);
     }
 
     @PostMapping(value = "/{id}/ficheiro", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('ATAS', 'EDITAR')")
     public AtaResponse anexarFicheiro(@PathVariable Long id, @RequestParam("ficheiro") MultipartFile ficheiro) {
         if (ficheiro.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O ficheiro é obrigatório e não pode ser vazio.");
@@ -82,7 +82,7 @@ public class AtaController {
     }
 
     @GetMapping("/{id}/download")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('ATAS', 'CONSULTAR')")
     public ResponseEntity<Resource> download(@PathVariable Long id) {
         ConteudoDocumento conteudo = service.descarregar(id);
         String nomeFicheiro = StringUtils.cleanPath(conteudo.nome());
@@ -93,7 +93,7 @@ public class AtaController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('ATAS', 'APAGAR')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         service.eliminar(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

@@ -30,7 +30,6 @@ import java.net.URI;
  */
 @RestController
 @RequestMapping("/api/v1/utilizadores")
-@PreAuthorize("hasAnyRole('ADMIN_SISTEMA', 'GESTOR_EMPRESA')")
 public class UtilizadorController {
 
     private final UtilizadorService service;
@@ -40,6 +39,7 @@ public class UtilizadorController {
     }
 
     @PostMapping
+    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'CRIAR')")
     public ResponseEntity<UtilizadorResponse> criar(@Valid @RequestBody UtilizadorCreateDTO dto,
                                                     UriComponentsBuilder uriBuilder) {
         UtilizadorResponse criado = service.criar(dto);
@@ -48,21 +48,25 @@ public class UtilizadorController {
     }
 
     @GetMapping
+    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'CONSULTAR')")
     public PageResponse<UtilizadorResponse> listar(Pageable pageable) {
         return PageResponse.de(service.listar(pageable));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'CONSULTAR')")
     public UtilizadorResponse obter(@PathVariable Long id) {
         return service.obterPorId(id);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'EDITAR')")
     public UtilizadorResponse atualizar(@PathVariable Long id, @Valid @RequestBody UtilizadorUpdateDTO dto) {
         return service.atualizar(id, dto);
     }
 
     @PutMapping("/{id}/password")
+    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'EDITAR')")
     public ResponseEntity<Void> alterarPassword(@PathVariable Long id,
                                                 @Valid @RequestBody AlterarPasswordDTO dto) {
         service.alterarPassword(id, dto);
@@ -70,12 +74,14 @@ public class UtilizadorController {
     }
 
     @PutMapping("/{id}/condomino")
+    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'EDITAR')")
     public UtilizadorResponse associarCondomino(@PathVariable Long id,
                                                 @Valid @RequestBody AssociarCondominoDTO dto) {
         return service.associarCondomino(id, dto.condominoId());
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'APAGAR')")
     public ResponseEntity<Void> desativar(@PathVariable Long id) {
         service.desativar(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

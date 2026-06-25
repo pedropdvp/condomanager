@@ -39,7 +39,7 @@ public class ReuniaoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'CRIAR')")
     public ResponseEntity<ReuniaoResponse> criar(@Valid @RequestBody ReuniaoCreateDTO dto,
                                                  UriComponentsBuilder uriBuilder) {
         ReuniaoResponse criada = service.criar(dto);
@@ -48,7 +48,7 @@ public class ReuniaoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'CONSULTAR')")
     public PageResponse<ReuniaoResponse> listar(@RequestParam(required = false) Long condominioId,
                                                 @RequestParam(required = false) EstadoReuniao estado,
                                                 Pageable pageable) {
@@ -56,44 +56,44 @@ public class ReuniaoController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'CONSULTAR')")
     public ReuniaoResponse obter(@PathVariable Long id) {
         return service.obterPorId(id);
     }
 
     @GetMapping("/{id}/convocatoria")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO', 'CONDOMINO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'CONSULTAR')")
     public ConvocatoriaResponse convocatoria(@PathVariable Long id) {
         return service.convocatoria(id);
     }
 
     /** Envia a convocatória por email aos condóminos; devolve o nº de emails enviados. */
     @PostMapping("/{id}/convocar")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'EDITAR')")
     public java.util.Map<String, Integer> convocar(@PathVariable Long id) {
         return java.util.Map.of("emailsEnviados", service.convocar(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'EDITAR')")
     public ReuniaoResponse atualizar(@PathVariable Long id, @Valid @RequestBody ReuniaoUpdateDTO dto) {
         return service.atualizar(id, dto);
     }
 
     @PostMapping("/{id}/realizar")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'EDITAR')")
     public ReuniaoResponse realizar(@PathVariable Long id) {
         return service.marcarRealizada(id);
     }
 
     @PostMapping("/{id}/cancelar")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'EDITAR')")
     public ReuniaoResponse cancelar(@PathVariable Long id) {
         return service.cancelar(id);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO')")
+    @PreAuthorize("@permissaoService.pode('REUNIOES', 'APAGAR')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         service.eliminar(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
