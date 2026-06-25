@@ -1,5 +1,6 @@
 package com.condomanager.service;
 
+import com.condomanager.dto.ConvocatoriaEnvioResponse;
 import com.condomanager.dto.ConvocatoriaResponse;
 import com.condomanager.dto.ReuniaoCreateDTO;
 import com.condomanager.dto.ReuniaoResponse;
@@ -21,6 +22,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Regras de negócio das reuniões, incluindo transições de estado e convocatória.
@@ -87,10 +91,10 @@ public class ReuniaoService {
     /**
      * Envia a convocatória por email a todos os condóminos do condomínio da reunião.
      *
-     * @return número de emails enviados
+     * @return resumo do envio: contagens e a lista de destinatários contactados
      */
     @Transactional(readOnly = true)
-    public int convocar(Long id) {
+    public ConvocatoriaEnvioResponse convocar(Long id) {
         Reuniao reuniao = obterDoTenant(id);
         Condominio condominio = reuniao.getCondominio();
         String assunto = "Convocatória de Assembleia — " + condominio.getNome();
@@ -101,15 +105,19 @@ public class ReuniaoService {
                 + "Ordem de trabalhos:\n" + (reuniao.getOrdemTrabalhos() != null ? reuniao.getOrdemTrabalhos() : "(a definir)")
                 + "\n\nNos termos da Lei 8/2022, a convocatória é feita com pelo menos 10 dias de antecedência.";
 
-        int enviados = 0;
+        List<ConvocatoriaEnvioResponse.Destinatario> destinatarios = new ArrayList<>();
+        int semEmail = 0;
         for (Condomino condomino : condominoRepository.findByFracao_Condominio_Id(condominio.getId())) {
             if (condomino.getEmail() != null && !condomino.getEmail().isBlank()) {
                 emailService.enviar(condomino.getEmail(), assunto, corpo);
-                enviados++;
+                destinatarios.add(new ConvocatoriaEnvioResponse.Destinatario(condomino.getNome(), condomino.getEmail()));
+            } else {
+                semEmail++;
             }
         }
-        logger.info("Convocatória da reunião id={} enviada a {} condóminos", id, enviados);
-        return enviados;
+        logger.info("Convocatória da reunião id={} enviada a {} condóminos ({} sem email)",
+                id, destinatarios.size(), semEmail);
+        return new ConvocatoriaEnvioResponse(destinatarios.size(), semEmail, destinatarios);
     }
 
     @Transactional

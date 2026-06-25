@@ -1,5 +1,6 @@
 package com.condomanager.controller;
 
+import com.condomanager.dto.ConvocatoriaEnvioResponse;
 import com.condomanager.dto.ConvocatoriaResponse;
 import com.condomanager.dto.PageResponse;
 import com.condomanager.dto.ReuniaoCreateDTO;
@@ -67,11 +68,11 @@ public class ReuniaoController {
         return service.convocatoria(id);
     }
 
-    /** Envia a convocatória por email aos condóminos; devolve o nº de emails enviados. */
+    /** Envia a convocatória por email aos condóminos; devolve o resumo e a lista de destinatários. */
     @PostMapping("/{id}/convocar")
     @PreAuthorize("@permissaoService.pode('REUNIOES', 'EDITAR')")
-    public java.util.Map<String, Integer> convocar(@PathVariable Long id) {
-        return java.util.Map.of("emailsEnviados", service.convocar(id));
+    public ConvocatoriaEnvioResponse convocar(@PathVariable Long id) {
+        return service.convocar(id);
     }
 
     @PutMapping("/{id}")

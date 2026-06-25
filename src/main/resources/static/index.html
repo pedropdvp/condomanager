@@ -207,14 +207,34 @@ async function apiUpload(path, formData, method='POST') {
     if (!res.ok) { if (res.status === 403) throw new Error('Sem permissão (403) para esta ação.'); throw new Error((data && (data.message || data.mensagem || data.erro)) || ('Erro ' + res.status)); }
     return data;
 }
-async function downloadFile(path, filename) {
+// Diálogo "Guardar como" (Chrome/Edge via File System Access API); fallback para download direto.
+function pickSaveHandle(suggestedName, mime) {
+    const ext = suggestedName.includes('.') ? suggestedName.split('.').pop().toLowerCase() : '';
+    const types = ext ? [{ description: ext.toUpperCase() + ' (.' + ext + ')', accept: { [mime || 'application/octet-stream']: ['.' + ext] } }] : [];
+    return window.showSaveFilePicker({ suggestedName, types });
+}
+function anchorDownload(blob, name) {
+    const url = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = name || 'ficheiro'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+async function downloadComPicker(path, suggestedName, mime, successMsg) {
     try {
+        // Abre o seletor de pasta primeiro (dentro do gesto do clique), depois descarrega.
+        let handle = null;
+        if (window.showSaveFilePicker) {
+            try { handle = await pickSaveHandle(suggestedName, mime); }
+            catch (e) { if (e.name === 'AbortError') return; handle = null; }
+        }
         const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } });
+        if (res.status === 401) { logout(); throw new Error('Sessão expirada — entre novamente.'); }
         if (!res.ok) throw new Error('Erro ' + res.status);
-        const blob = await res.blob(); const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = filename || 'ficheiro'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        const blob = await res.blob();
+        if (handle) { const w = await handle.createWritable(); await w.write(blob); await w.close(); }
+        else anchorDownload(blob, suggestedName);
+        if (successMsg) showAlert(successMsg, 'success');
     } catch (e) { showAlert(e.message, 'danger'); }
 }
+function downloadFile(path, filename) { return downloadComPicker(path, filename || 'ficheiro', 'application/octet-stream'); }
 function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 function btn(cls, label, onclick) { return `<button class="btn btn-sm ${cls}" onclick="${onclick}">${label}</button> `; }
 
@@ -351,14 +371,12 @@ async function loadCondominosDe(fracaoId, numero) {
         table(cache.cond_o, o => (can('CONDOMINOS','EDITAR') ? btn('btn-outline-secondary','Editar',`editCondomino(${o.id})`) : '') +
             (can('CONDOMINOS','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarCondomino(${o.id},${fracaoId},'${esc(numero)}')`) : '')));
 }
-async function baixar(fmt) {
-    try {
-        const path = fmt === 'pdf' ? `/api/v1/relatorios/quotas?condominioId=${currentCond.id}` : `/api/v1/relatorios/quotas/excel?condominioId=${currentCond.id}`;
-        const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } }); if (!res.ok) throw new Error('Erro ' + res.status);
-        const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a');
-        a.href = url; a.download = `relatorio-quotas-${currentCond.id}.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-        showAlert('Relatório descarregado.', 'success');
-    } catch (e) { showAlert(e.message, 'danger'); }
+function baixar(fmt) {
+    const isPdf = fmt === 'pdf';
+    const path = isPdf ? `/api/v1/relatorios/quotas?condominioId=${currentCond.id}` : `/api/v1/relatorios/quotas/excel?condominioId=${currentCond.id}`;
+    const name = `relatorio-quotas-${currentCond.id}.${isPdf ? 'pdf' : 'xlsx'}`;
+    const mime = isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    return downloadComPicker(path, name, mime, 'Relatório guardado.');
 }
 
 async function loadVotacoes() {
@@ -471,7 +489,18 @@ async function apagarDespesa(id) { if (!confirm('Apagar esta despesa?')) return;
 
 function openReuniao() { openModal(`Nova reunião — ${currentCond.nome}`, field('data','Data','date','required') + field('hora','Hora','time') + field('local','Local') + field('ordemTrabalhos','Ordem de trabalhos'), async () => { const d = formData(); await apiPost('/api/v1/reunioes', { condominioId: currentCond.id, data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião agendada.', 'success'); loadReunioes(); }); }
 function editReuniao(id) { const r = cache.reun.find(x => x.id === id); openModal('Editar reunião', field('data','Data','date','required',r.data) + field('hora','Hora','time','',r.hora || '') + field('local','Local','text','',esc(r.local || '')) + field('ordemTrabalhos','Ordem de trabalhos','text','',esc(r.ordemTrabalhos || '')), async () => { const d = formData(); await apiPut(`/api/v1/reunioes/${id}`, { data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião atualizada.', 'success'); loadReunioes(); }); }
-async function convocarReuniao(id) { if (!confirm('Enviar convocatória por email aos condóminos?')) return; try { const r = await apiPost(`/api/v1/reunioes/${id}/convocar`); showAlert(`Convocatória enviada (${r.emailsEnviados} emails).`, 'success'); } catch (e) { showAlert(e.message, 'danger'); } }
+async function convocarReuniao(id) {
+    if (!confirm('Enviar convocatória por email aos condóminos do condomínio?')) return;
+    try {
+        const r = await apiPost(`/api/v1/reunioes/${id}/convocar`);
+        const linhas = (r.destinatarios || []).map(d => `<tr><td>${d.nome || '—'}</td><td>${d.email}</td></tr>`).join('');
+        const tabela = (r.destinatarios && r.destinatarios.length)
+            ? `<p class="small mb-1">Email enviado a estes condóminos:</p><table class="table table-sm table-striped"><thead><tr><th>Condómino</th><th>Email</th></tr></thead><tbody>${linhas}</tbody></table>`
+            : '<p class="text-secondary">Nenhum condómino com email definido — não foi enviado nenhum email.</p>';
+        const aviso = r.semEmail ? `<p class="small text-warning mb-2">⚠️ ${r.semEmail} condómino(s) sem email não foram contactados.</p>` : '';
+        openModal(`Convocatória enviada — ${r.emailsEnviados} email${r.emailsEnviados === 1 ? '' : 's'}`, aviso + tabela, async () => {}, '', true);
+    } catch (e) { showAlert(e.message, 'danger'); }
+}
 async function apagarReuniao(id) { if (!confirm('Apagar esta reunião?')) return; try { await apiDel(`/api/v1/reunioes/${id}`); showAlert('Reunião apagada.', 'success'); loadReunioes(); } catch (e) { showAlert(e.message, 'danger'); } }
 
 function openGerarQuotas() { const now = new Date(); openModal(`Gerar quotas — ${currentCond.nome}`, field('mes','Mês (1–12)','number','min="1" max="12" required',now.getMonth() + 1) + field('ano','Ano','number','min="2000" max="2100" required',now.getFullYear()), async () => { const d = formData(); const r = await apiPost('/api/v1/quotas/gerar', { condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano) }); showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success'); loadQuotas(); }); }
@@ -498,8 +527,10 @@ function openDocumento() {
 }
 async function apagarDocumento(id) { if (!confirm('Apagar este documento?')) return; try { await apiDel('/api/v1/documentos/' + id); showAlert('Documento apagado.', 'success'); loadDocumentos(); } catch (e) { showAlert(e.message, 'danger'); } }
 function openAta() {
-    openModal('Nova ata', field('titulo','Título','text','required') + field('descricao','Descrição') + field('dataReuniao','Data da reunião','date'),
-        async () => { const d = formData(); await apiPost('/api/v1/atas', { reuniaoId: currentReuniaoId, titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao || null }); showAlert('Ata criada. Pode anexar o ficheiro.', 'success'); loadAtasDe(currentReuniaoId); });
+    const r = (cache.reun || []).find(x => x.id === currentReuniaoId);
+    const dataDefault = r && r.data ? r.data : '';
+    openModal('Nova ata', field('titulo','Título','text','required') + field('descricao','Descrição') + field('dataReuniao','Data da reunião','date','required',dataDefault),
+        async () => { const d = formData(); if (!d.dataReuniao) throw new Error('A data da reunião é obrigatória.'); await apiPost('/api/v1/atas', { reuniaoId: currentReuniaoId, titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao }); showAlert('Ata criada. Pode anexar o ficheiro.', 'success'); loadAtasDe(currentReuniaoId); });
 }
 function editAta(id) {
     const a = cache.atas.find(x => x.id === id);
