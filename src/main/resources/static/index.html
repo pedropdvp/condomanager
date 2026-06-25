@@ -152,7 +152,8 @@ const MONEY = ['orcamentoAnual','valor'];
 const charts = {};
 const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modal'));
 let currentCond = null, onSubmitModal = null;
-const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [] };
+const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [], docs: [], atas: [] };
+let currentReuniaoId = null;
 
 const PERFIS_ALL = [
     { value: 'CONDOMINO', label: 'Condómino' }, { value: 'ADMIN_CONDOMINIO', label: 'Administrador de Condomínio' },
@@ -199,6 +200,21 @@ async function apiSend(method, path, body) {
     return data;
 }
 const apiGet = p => apiSend('GET', p), apiPost = (p, b) => apiSend('POST', p, b), apiPut = (p, b) => apiSend('PUT', p, b), apiDel = p => apiSend('DELETE', p);
+async function apiUpload(path, formData, method='POST') {
+    const res = await fetch(path, { method, headers: { 'Authorization': 'Bearer ' + token() }, body: formData });
+    if (res.status === 401) { logout(); throw new Error('Sessão expirada — entre novamente.'); }
+    const txt = await res.text(); let data; try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
+    if (!res.ok) { if (res.status === 403) throw new Error('Sem permissão (403) para esta ação.'); throw new Error((data && (data.message || data.mensagem || data.erro)) || ('Erro ' + res.status)); }
+    return data;
+}
+async function downloadFile(path, filename) {
+    try {
+        const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } });
+        if (!res.ok) throw new Error('Erro ' + res.status);
+        const blob = await res.blob(); const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename || 'ficheiro'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    } catch (e) { showAlert(e.message, 'danger'); }
+}
 function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 function btn(cls, label, onclick) { return `<button class="btn btn-sm ${cls}" onclick="${onclick}">${label}</button> `; }
 
@@ -270,6 +286,7 @@ function verCondominio(id) {
           <button class="btn btn-outline-primary" onclick="loadQuotas()">Quotas</button>
           <button class="btn btn-outline-primary" onclick="loadDespesas()">Despesas</button>
           <button class="btn btn-outline-primary" onclick="loadReunioes()">Reuniões</button>
+          <button class="btn btn-outline-primary" onclick="loadDocumentos()">Documentos</button>
           <button class="btn btn-outline-success" onclick="baixar('pdf')">PDF</button>
           <button class="btn btn-outline-success" onclick="baixar('excel')">Excel</button>
         </div>
@@ -308,8 +325,24 @@ async function loadDespesas() {
 async function loadReunioes() {
     cache.reun = rows(await apiGet(`/api/v1/reunioes?condominioId=${currentCond.id}&size=50`));
     subView('Reuniões', (can('REUNIOES','CRIAR') ? btn('btn-success','➕ Nova reunião','openReuniao()') : ''),
-        table(cache.reun, r => (can('REUNIOES','EDITAR') ? btn('btn-outline-secondary','Editar',`editReuniao(${r.id})`) + btn('btn-outline-info','Convocar',`convocarReuniao(${r.id})`) : '') +
+        table(cache.reun, r => (can('ATAS','CONSULTAR') ? btn('btn-outline-dark','Atas',`loadAtasDe(${r.id})`) : '') +
+            (can('REUNIOES','EDITAR') ? btn('btn-outline-secondary','Editar',`editReuniao(${r.id})`) + btn('btn-outline-info','Convocar',`convocarReuniao(${r.id})`) : '') +
             (can('REUNIOES','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarReuniao(${r.id})`) : '')));
+}
+async function loadDocumentos() {
+    cache.docs = rows(await apiGet(`/api/v1/documentos?condominioId=${currentCond.id}&size=50`));
+    subView('Documentos', (can('DOCUMENTOS','CRIAR') ? btn('btn-success','➕ Carregar documento','openDocumento()') : ''),
+        table(cache.docs, d => btn('btn-outline-primary','Descarregar',`downloadFile('/api/v1/documentos/${d.id}/download','${esc(d.nome)}')`) +
+            (can('DOCUMENTOS','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarDocumento(${d.id})`) : '')));
+}
+async function loadAtasDe(reuniaoId) {
+    currentReuniaoId = reuniaoId;
+    cache.atas = rows(await apiGet(`/api/v1/atas?reuniaoId=${reuniaoId}&size=50`));
+    subView('Atas da reunião #' + reuniaoId,
+        (can('ATAS','CRIAR') ? btn('btn-success','➕ Nova ata','openAta()') : '') + btn('btn-outline-secondary','‹ Voltar às reuniões','loadReunioes()'),
+        table(cache.atas, a => (a.temFicheiro ? btn('btn-outline-primary','Descarregar',`downloadFile('/api/v1/atas/${a.id}/download','${esc(a.titulo || 'ata')}.pdf')`) : '') +
+            (can('ATAS','EDITAR') ? btn('btn-outline-info','Anexar ficheiro',`anexarAta(${a.id})`) + btn('btn-outline-secondary','Editar',`editAta(${a.id})`) : '') +
+            (can('ATAS','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarAta(${a.id})`) : '')));
 }
 async function loadCondominosDe(fracaoId, numero) {
     cache.cond_o = rows(await apiGet(`/api/v1/condominos?fracaoId=${fracaoId}&size=50`));
@@ -443,6 +476,33 @@ function openRecuperar() {
             else throw new Error('Indica o email (para pedir) ou token + nova password (para redefinir).'); },
         'O envio do token por <strong>email</strong> exige SMTP ativo (<code>MAIL_ENABLED=true</code>).');
 }
+function openDocumento() {
+    openModal('Carregar documento — ' + currentCond.nome,
+        field('nome','Nome','text','required') + field('tipo','Tipo (ex.: PDF, Regulamento)') + field('ficheiro','Ficheiro','file','required'),
+        async () => {
+            const f = document.getElementById('modalForm');
+            if (!f.ficheiro.files.length) throw new Error('Escolha um ficheiro.');
+            const fd = new FormData();
+            fd.append('condominioId', currentCond.id); fd.append('nome', f.nome.value); fd.append('tipo', f.tipo.value || ''); fd.append('ficheiro', f.ficheiro.files[0]);
+            await apiUpload('/api/v1/documentos', fd); showAlert('Documento carregado.', 'success'); loadDocumentos();
+        });
+}
+async function apagarDocumento(id) { if (!confirm('Apagar este documento?')) return; try { await apiDel('/api/v1/documentos/' + id); showAlert('Documento apagado.', 'success'); loadDocumentos(); } catch (e) { showAlert(e.message, 'danger'); } }
+function openAta() {
+    openModal('Nova ata', field('titulo','Título','text','required') + field('descricao','Descrição') + field('dataReuniao','Data da reunião','date'),
+        async () => { const d = formData(); await apiPost('/api/v1/atas', { reuniaoId: currentReuniaoId, titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao || null }); showAlert('Ata criada. Pode anexar o ficheiro.', 'success'); loadAtasDe(currentReuniaoId); });
+}
+function editAta(id) {
+    const a = cache.atas.find(x => x.id === id);
+    openModal('Editar ata', field('titulo','Título','text','required',esc(a.titulo || '')) + field('descricao','Descrição','text','',esc(a.descricao || '')) + field('dataReuniao','Data da reunião','date','',a.dataReuniao || ''),
+        async () => { const d = formData(); await apiPut('/api/v1/atas/' + id, { titulo: d.titulo, descricao: d.descricao, dataReuniao: d.dataReuniao || null }); showAlert('Ata atualizada.', 'success'); loadAtasDe(currentReuniaoId); });
+}
+function anexarAta(id) {
+    openModal('Anexar ficheiro à ata', field('ficheiro','Ficheiro (PDF, etc.)','file','required'),
+        async () => { const f = document.getElementById('modalForm'); if (!f.ficheiro.files.length) throw new Error('Escolha um ficheiro.'); const fd = new FormData(); fd.append('ficheiro', f.ficheiro.files[0]); await apiUpload('/api/v1/atas/' + id + '/ficheiro', fd); showAlert('Ficheiro anexado.', 'success'); loadAtasDe(currentReuniaoId); });
+}
+async function apagarAta(id) { if (!confirm('Apagar esta ata?')) return; try { await apiDel('/api/v1/atas/' + id); showAlert('Ata apagada.', 'success'); loadAtasDe(currentReuniaoId); } catch (e) { showAlert(e.message, 'danger'); } }
+
 document.getElementById('modalForm').addEventListener('submit', async (e) => { e.preventDefault(); const err = document.getElementById('modalError'); err.classList.add('d-none'); try { await onSubmitModal(); modal().hide(); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); } });
 
 async function loadHealth() { const b = document.getElementById('healthBadge'); try { const d = await (await fetch('/api/v1/health')).json(); b.className = 'badge bg-success'; b.textContent = 'serviço: ' + (d.status || 'UP'); } catch { b.className = 'badge bg-danger'; b.textContent = 'serviço: indisponível'; } }
