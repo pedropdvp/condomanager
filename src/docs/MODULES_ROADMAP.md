@@ -14,7 +14,7 @@
 | **Logout** | ✅ | Sem estado no servidor (JWT *stateless*); a UI descarta o token. |
 | **Recuperação de password** | ✅ backend · 🟡 UI | `POST /api/v1/auth/recuperar-password` (gera token, `V18`) e `POST /api/v1/auth/redefinir-password` (token + nova password). **Requer SMTP** para enviar o token por email (`MAIL_ENABLED=true`); com email desligado, o token é apenas registado no log. UI: ligações na página de login. |
 | **Alteração de password** | ✅ backend · ✅ UI | `PUT /api/v1/utilizadores/{id}/password`. UI: opção "Alterar password" (utilizador na sessão). |
-| **Gestão de perfis** | ✅ backend · 🟡 UI | Perfis RBAC fixos (`ADMIN_SISTEMA`, `GESTOR_EMPRESA`, `FUNCIONARIO`, `ADMIN_CONDOMINIO`, `CONDOMINO`), semeados em `V2`. Atribuição a utilizadores via `UtilizadorController` (`POST`/`PUT /api/v1/utilizadores`). UI de gestão de utilizadores: **próximo incremento**. |
+| **Gestão de perfis** | ✅ backend · ✅ UI | Perfis RBAC fixos (`ADMIN_SISTEMA`, `GESTOR_EMPRESA`, `FUNCIONARIO`, `ADMIN_CONDOMINIO`, `CONDOMINO`), semeados em `V2`. **Ecrã "Gestão de Utilizadores"** (separador na UI, para admin/gestor): listar, pesquisar, criar acesso, editar e apagar utilizadores, atribuindo o perfil. O gestor não pode atribuir `ADMIN_SISTEMA` (validado no backend e na UI). A matriz CRIAR/EDITAR/APAGAR/CONSULTAR é mostrada **pré-preenchida pelo perfil** como guia visual. |
 | **Gestão de permissões** | ✅ (por desenho) | As permissões são **baseadas em papéis (RBAC)** via `@PreAuthorize("hasAnyRole(...)")` em cada endpoint — não existe um CRUD de permissões granulares separado; gere-se atribuindo perfis aos utilizadores. |
 
 ### Tecnologias
