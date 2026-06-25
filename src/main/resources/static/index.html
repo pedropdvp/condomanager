@@ -5,6 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CondoManager — Gestão de Condomínios</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      :root { --cm-r: 12px; --cm-r-sm: 9px; }
+      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+      h1,h2,h3,h4,h5,h6,.navbar-brand,.modal-title { letter-spacing: -.022em; font-weight: 600; }
+      .navbar-brand { font-weight: 700; }
+
+      /* ---------- Botões: cantos arredondados + relevo 3D ---------- */
+      .btn { border-radius: var(--cm-r); font-weight: 500; letter-spacing: -.01em;
+             transition: transform .12s cubic-bezier(.2,.8,.3,1), box-shadow .16s ease, filter .16s ease; }
+      .btn-sm { border-radius: var(--cm-r-sm); }
+      .btn-primary,.btn-success,.btn-danger,.btn-warning,.btn-info,.btn-secondary,.btn-dark,.btn-light {
+             border: none; box-shadow: 0 2px 0 rgba(0,0,0,.16), 0 5px 14px rgba(0,0,0,.16); }
+      .btn-primary  { background-image: linear-gradient(180deg,#4d94ff 0%,#0d6efd 100%); }
+      .btn-success  { background-image: linear-gradient(180deg,#2bd4a4 0%,#198754 100%); }
+      .btn-danger   { background-image: linear-gradient(180deg,#ff5e6c 0%,#dc3545 100%); }
+      .btn-warning  { background-image: linear-gradient(180deg,#ffd24d 0%,#ffc107 100%); }
+      .btn-info     { background-image: linear-gradient(180deg,#3dd5f3 0%,#0dcaf0 100%); }
+      .btn-secondary{ background-image: linear-gradient(180deg,#8a929b 0%,#6c757d 100%); }
+      .btn-dark     { background-image: linear-gradient(180deg,#3b4148 0%,#212529 100%); }
+      .btn-light    { background-image: linear-gradient(180deg,#ffffff 0%,#eef1f4 100%); }
+      [class*="btn-outline-"] { box-shadow: 0 1px 0 rgba(0,0,0,.08), 0 3px 8px rgba(0,0,0,.07); }
+      .btn-sm[class*="btn-outline-"] { box-shadow: 0 1px 0 rgba(0,0,0,.07), 0 2px 5px rgba(0,0,0,.06); }
+      .btn:hover  { transform: translateY(-1.5px); filter: brightness(1.06); box-shadow: 0 4px 0 rgba(0,0,0,.18), 0 10px 22px rgba(0,0,0,.20); }
+      .btn:active { transform: translateY(1px); filter: brightness(.98); box-shadow: 0 1px 0 rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.18); }
+      .btn-close { box-shadow: none !important; }
+
+      /* ---------- "Atas" e outros outline-dark legíveis no modo escuro (cinza claro) ---------- */
+      [data-bs-theme="dark"] .btn-outline-dark { color: #ced4da; border-color: #727b84; }
+      [data-bs-theme="dark"] .btn-outline-dark:hover { color: #fff; background-color: #5c636a; border-color: #5c636a; }
+      [data-bs-theme="dark"] .btn-outline-secondary { color: #c4cbd2; border-color: #727b84; }
+
+      /* ---------- Cartões, tabs, inputs, modal ---------- */
+      .card { border: none; border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 28px rgba(0,0,0,.07); }
+      [data-bs-theme="dark"] .card { box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 10px 28px rgba(0,0,0,.4); }
+      .nav-tabs { border-bottom: none; gap: .25rem; }
+      .nav-tabs .nav-link { border: none; font-weight: 500; border-radius: 10px 10px 0 0; }
+      .nav-tabs .nav-link.active { box-shadow: inset 0 -3px 0 var(--bs-primary); }
+      .form-control, .form-select { border-radius: 10px; }
+      .modal-content { border: none; border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,.32); }
+      .table thead th { font-weight: 600; letter-spacing: -.01em; }
+    </style>
 </head>
 <body class="bg-body-tertiary">
 
@@ -268,9 +312,36 @@ async function showApp() {
 }
 
 function kpi(label, value, color) { return `<div class="col-6 col-md-4 col-lg-2"><div class="card text-bg-${color} h-100"><div class="card-body py-2"><div class="small">${label}</div><div class="h4 mb-0">${value}</div></div></div></div>`; }
+// Sombra subtil por baixo das séries -> sensação de espessura/3D.
+const cmShadow = { id: 'cmShadow',
+    beforeDatasetsDraw(c) { const x = c.ctx; x.save(); x.shadowColor = 'rgba(0,0,0,.30)'; x.shadowBlur = 12; x.shadowOffsetX = 0; x.shadowOffsetY = 6; },
+    afterDatasetsDraw(c) { c.ctx.restore(); } };
+Chart.register(cmShadow);
+function chartTheme() {
+    const dark = document.documentElement.dataset.bsTheme === 'dark';
+    return { text: dark ? '#e9ecef' : '#343a40', grid: dark ? 'rgba(255,255,255,.10)' : 'rgba(0,0,0,.07)', sep: dark ? '#2b3035' : '#ffffff' };
+}
 function chart(id, type, labels, data, label) {
     if (charts[id]) charts[id].destroy();
-    charts[id] = new Chart(document.getElementById(id), { type, data: { labels, datasets: [{ label, data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type !== 'bar' } } } });
+    const t = chartTheme(), isBar = type === 'bar';
+    const ds = { label, data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
+        borderColor: t.sep, borderWidth: isBar ? 0 : 3, borderRadius: isBar ? 10 : 0,
+        maxBarThickness: 56, hoverOffset: isBar ? 0 : 12 };
+    charts[id] = new Chart(document.getElementById(id), {
+        type, data: { labels, datasets: [ds] },
+        options: { responsive: true, maintainAspectRatio: false,
+            cutout: type === 'doughnut' ? '58%' : undefined,
+            plugins: {
+                legend: { display: !isBar, position: 'bottom',
+                    labels: { color: t.text, usePointStyle: true, pointStyle: 'circle', padding: 14, font: { family: 'Inter', size: 12, weight: '500' } } },
+                tooltip: { backgroundColor: 'rgba(20,22,26,.92)', padding: 10, cornerRadius: 10, titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' } }
+            },
+            scales: isBar ? {
+                x: { ticks: { color: t.text, font: { family: 'Inter', weight: '500' } }, grid: { display: false }, border: { display: false } },
+                y: { ticks: { color: t.text, font: { family: 'Inter' } }, grid: { color: t.grid }, border: { display: false } }
+            } : {}
+        }
+    });
 }
 async function loadDashboard() {
     try {
@@ -556,7 +627,13 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => { e
 document.getElementById('logoutBtn').addEventListener('click', logout);
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { const tab = b.dataset.tab; activateTab(tab); if (tab === 'utilizadores') { loadUtilizadores(); return; } if (tab === 'permissoes') { loadPermPerfis(); return; } if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores e Permissões.', 'info'); return; } if (tab === 'dashboard') loadDashboard(); if (tab === 'condominios') loadCondominios(); if (tab === 'votacoes') loadVotacoes(); }));
 const themeSaved = localStorage.getItem('theme'); if (themeSaved) document.documentElement.dataset.bsTheme = themeSaved;
-document.getElementById('themeToggle').addEventListener('click', () => { const h = document.documentElement; h.dataset.bsTheme = h.dataset.bsTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', h.dataset.bsTheme); });
+document.getElementById('themeToggle').addEventListener('click', () => {
+    const h = document.documentElement; h.dataset.bsTheme = h.dataset.bsTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', h.dataset.bsTheme);
+    // Re-renderizar gráficos da vista ativa para as cores acompanharem o tema.
+    const active = document.querySelector('.nav-link.active')?.dataset.tab;
+    if (active === 'dashboard') loadDashboard();
+    if (currentCond && document.getElementById('chartPermilagem')) loadFracoes();
+});
 
 loadHealth();
 if (token()) showApp();
