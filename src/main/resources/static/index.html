@@ -386,7 +386,8 @@ async function loadUtilizadores() {
 function renderUtilizadores() {
     const q = (document.getElementById('userSearch').value || '').toLowerCase();
     const items = cache.users.filter(u => !q || (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.perfis || []).join(',').toLowerCase().includes(q));
-    document.getElementById('utilizadoresTable').innerHTML = table(items, u => btn('btn-outline-secondary','Editar',`editUtilizador(${u.id})`) + btn('btn-outline-danger','Apagar',`apagarUtilizador(${u.id})`));
+    document.getElementById('utilizadoresTable').innerHTML = table(items, u => btn('btn-outline-secondary','Editar',`editUtilizador(${u.id})`) +
+        (u.ativo ? btn('btn-outline-danger','Desativar',`toggleAtivoUtilizador(${u.id},false)`) : btn('btn-outline-success','Ativar',`toggleAtivoUtilizador(${u.id},true)`)));
 }
 async function fillMatrizUser(perfil) {
     const box = document.getElementById('matrizPerm'); if (!box) return;
@@ -406,7 +407,15 @@ function editUtilizador(id) {
         async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${id}`, { nome: d.nome, ativo: d.ativo === 'true', perfis: [d.perfil] }); showAlert('Utilizador atualizado.', 'success'); loadUtilizadores(); }, '', true);
     wirePerfilMatriz(); fillMatrizUser(cur);
 }
-async function apagarUtilizador(id) { if (!confirm('Desativar este utilizador?')) return; try { await apiDel(`/api/v1/utilizadores/${id}`); showAlert('Utilizador desativado.', 'success'); loadUtilizadores(); } catch (e) { showAlert(e.message, 'danger'); } }
+async function toggleAtivoUtilizador(id, ativar) {
+    const u = cache.users.find(x => x.id === id);
+    if (!confirm(ativar ? 'Ativar este utilizador?' : 'Desativar este utilizador? (fica inativo, não é removido — pode reativá-lo depois)')) return;
+    try {
+        if (ativar) await apiPut(`/api/v1/utilizadores/${id}`, { nome: u.nome, ativo: true, perfis: u.perfis });
+        else await apiDel(`/api/v1/utilizadores/${id}`);
+        showAlert(ativar ? 'Utilizador ativado.' : 'Utilizador desativado.', 'success'); loadUtilizadores();
+    } catch (e) { showAlert(e.message, 'danger'); }
+}
 
 let permInit = false;
 async function loadPermPerfis() {

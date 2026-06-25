@@ -66,7 +66,7 @@ public class UtilizadorController {
     }
 
     @PutMapping("/{id}/password")
-    @PreAuthorize("@permissaoService.pode('UTILIZADORES', 'EDITAR')")
+    @PreAuthorize("@permissaoService.podeGerirOuProprio(#id, 'UTILIZADORES', 'EDITAR')")
     public ResponseEntity<Void> alterarPassword(@PathVariable Long id,
                                                 @Valid @RequestBody AlterarPasswordDTO dto) {
         service.alterarPassword(id, dto);

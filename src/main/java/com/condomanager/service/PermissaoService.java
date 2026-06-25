@@ -8,6 +8,8 @@ import com.condomanager.model.PerfilTipo;
 import com.condomanager.model.Permissao;
 import com.condomanager.repository.PerfilRepository;
 import com.condomanager.repository.PermissaoRepository;
+import com.condomanager.security.AuthenticatedUser;
+import com.condomanager.security.SecurityUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -57,6 +59,20 @@ public class PermissaoService {
         } catch (IllegalArgumentException e) {
             return false; // funcionalidade/ação desconhecida
         }
+    }
+
+    /**
+     * Permite a ação se o alvo for o <strong>próprio</strong> utilizador autenticado, ou então
+     * se tiver a permissão indicada. Usado em operações *self-service* (ex.: alterar a própria
+     * password) que não devem exigir permissão de gestão de utilizadores.
+     */
+    @Transactional(readOnly = true)
+    public boolean podeGerirOuProprio(Long idAlvo, String funcionalidade, String acao) {
+        Long meu = SecurityUtils.utilizadorAtual().map(AuthenticatedUser::id).orElse(null);
+        if (meu != null && meu.equals(idAlvo)) {
+            return true;
+        }
+        return pode(funcionalidade, acao);
     }
 
     /** Matriz de permissões de um perfil: funcionalidade → ações permitidas. */
