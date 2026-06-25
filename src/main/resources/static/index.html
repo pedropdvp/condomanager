@@ -22,32 +22,27 @@
 </nav>
 
 <main class="container py-4">
-
-    <!-- ===== LOGIN ===== -->
     <section id="loginView" class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow-sm"><div class="card-body">
-                <h1 class="h4 card-title mb-3">Entrar</h1>
-                <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
-                <form id="loginForm">
-                    <div class="mb-3"><label class="form-label">Email</label>
-                        <input id="email" type="email" class="form-control" value="gestor.alfa@demo.local" required></div>
-                    <div class="mb-3"><label class="form-label">Password</label>
-                        <input id="password" type="password" class="form-control" value="gestor123" required></div>
-                    <button id="loginBtn" class="btn btn-primary w-100" type="submit">Entrar</button>
-                </form>
-                <p class="mt-2 mb-0 text-end"><a href="#" onclick="openRecuperar();return false;" class="small">Recuperar password</a></p>
-                <hr>
-                <p class="small text-secondary mb-1">Contas de demonstração:</p>
-                <ul class="small text-secondary mb-0">
-                    <li>Gestor: <code>gestor.alfa@demo.local</code> / <code>gestor123</code></li>
-                    <li>Admin: <code>admin@condomanager.local</code> / <code>admin123</code></li>
-                </ul>
-            </div></div>
-        </div>
+        <div class="col-md-6 col-lg-5"><div class="card shadow-sm"><div class="card-body">
+            <h1 class="h4 card-title mb-3">Entrar</h1>
+            <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+            <form id="loginForm">
+                <div class="mb-3"><label class="form-label">Email</label>
+                    <input id="email" type="email" class="form-control" value="gestor.alfa@demo.local" required></div>
+                <div class="mb-3"><label class="form-label">Password</label>
+                    <input id="password" type="password" class="form-control" value="gestor123" required></div>
+                <button id="loginBtn" class="btn btn-primary w-100" type="submit">Entrar</button>
+            </form>
+            <p class="mt-2 mb-0 text-end"><a href="#" onclick="openRecuperar();return false;" class="small">Recuperar password</a></p>
+            <hr>
+            <p class="small text-secondary mb-1">Contas de demonstração:</p>
+            <ul class="small text-secondary mb-0">
+                <li>Gestor: <code>gestor.alfa@demo.local</code> / <code>gestor123</code></li>
+                <li>Admin: <code>admin@condomanager.local</code> / <code>admin123</code></li>
+            </ul>
+        </div></div></div>
     </section>
 
-    <!-- ===== APP ===== -->
     <section id="appView" class="d-none">
         <div id="adminBanner" class="alert alert-info d-none" role="alert"></div>
         <ul class="nav nav-tabs mb-3">
@@ -57,10 +52,8 @@
             <li class="nav-item d-none" id="navUtilizadores"><button class="nav-link" data-tab="utilizadores">👥 Utilizadores</button></li>
             <li class="nav-item d-none" id="navPermissoes"><button class="nav-link" data-tab="permissoes">🔐 Permissões</button></li>
         </ul>
-
         <div id="alert" class="alert d-none" role="alert"></div>
 
-        <!-- Dashboard -->
         <div id="tab-dashboard">
             <div id="kpis" class="row g-3 mb-4"></div>
             <div class="row g-3">
@@ -75,18 +68,16 @@
             </div>
         </div>
 
-        <!-- Condomínios -->
         <div id="tab-condominios" class="d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h5 mb-0">Condomínios</h2>
-                <div><button class="btn btn-sm btn-success" onclick="openCondominio()">➕ Novo condomínio</button>
+                <div><button id="btnNovoCond" class="btn btn-sm btn-success" onclick="openCondominio()">➕ Novo condomínio</button>
                     <button class="btn btn-sm btn-outline-primary" onclick="loadCondominios()">↻</button></div>
             </div>
             <div id="condominiosTable" class="table-responsive"></div>
             <div id="detalhe" class="mt-4"></div>
         </div>
 
-        <!-- Votações -->
         <div id="tab-votacoes" class="d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h5 mb-0">Votações</h2>
@@ -96,7 +87,6 @@
             <div id="resultadoVotacao" class="mt-4"></div>
         </div>
 
-        <!-- Utilizadores -->
         <div id="tab-utilizadores" class="d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h5 mb-0">Gestão de Utilizadores</h2>
@@ -107,33 +97,29 @@
             <div id="utilizadoresTable" class="table-responsive"></div>
         </div>
 
-        <!-- Permissões -->
         <div id="tab-permissoes" class="d-none">
             <h2 class="h5 mb-2">Permissões por perfil (RBAC granular)</h2>
-            <div id="permReadonlyNote" class="alert alert-warning small d-none">Modo de consulta — apenas o <strong>Administrador do Sistema</strong> pode editar permissões (UC04 – Gerir permissões).</div>
+            <div id="permReadonlyNote" class="alert alert-warning small d-none">Modo de consulta — apenas o <strong>Administrador do Sistema</strong> pode editar (UC04).</div>
             <div class="row g-2 align-items-end mb-2">
                 <div class="col-auto"><label class="form-label small mb-0">Perfil</label>
                     <select id="permPerfil" class="form-select form-select-sm" onchange="loadPermissoes()"></select></div>
                 <div class="col-auto"><button id="permSave" class="btn btn-sm btn-success d-none" onclick="savePermissoes()">Guardar</button></div>
             </div>
             <div id="permMatriz" class="table-responsive"></div>
-            <p class="small text-secondary">Cada ✔ é uma permissão <strong>persistida na BD</strong> e <strong>aplicada</strong> nos endpoints (referência: Condomínios). O <code>ADMIN_SISTEMA</code> tem acesso total.</p>
+            <p class="small text-secondary">Cada ✔ é uma permissão <strong>persistida</strong> e <strong>aplicada</strong> em 9 módulos. O <code>ADMIN_SISTEMA</code> tem acesso total.</p>
         </div>
     </section>
 </main>
 
 <footer class="container pb-4"><span id="healthBadge" class="badge bg-secondary">serviço: …</span></footer>
 
-<!-- MODAL GENÉRICO -->
 <div class="modal fade" id="modal" tabindex="-1"><div class="modal-dialog" id="modalDialog"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title" id="modalTitle"></h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-header"><h5 class="modal-title" id="modalTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
     <form id="modalForm"><div class="modal-body">
         <div id="modalInfo" class="alert alert-info small d-none"></div>
         <div id="modalError" class="alert alert-danger d-none"></div>
         <div id="modalFields"></div>
-    </div>
-    <div class="modal-footer">
+    </div><div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
     </div></form>
@@ -142,83 +128,62 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-// ---------- Estado / helpers ----------
 const token = () => sessionStorage.getItem('cm_token');
 const user = () => JSON.parse(sessionStorage.getItem('cm_user') || '{}');
 const isAdmin = () => (user().perfis || []).includes('ROLE_ADMIN_SISTEMA');
 const isGestor = () => (user().perfis || []).includes('ROLE_GESTOR_EMPRESA');
 const canManageUsers = () => isAdmin() || isGestor();
 const PALETTE = ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#20c997','#fd7e14'];
+// Permissões efetivas (granular). Módulos fora desta lista são RBAC por papel -> can()=true.
+let myPerms = {};
+const GRANULAR = new Set(['EMPRESAS','CONDOMINIOS','CONDOMINOS','UTILIZADORES','ATAS','PAGAMENTOS','REUNIOES','VOTACOES','DOCUMENTOS','MENSAGENS']);
+function can(modulo, acao) { return !GRANULAR.has(modulo) || (myPerms[modulo] || []).includes(acao); }
+
 const LABELS = {
     id:'ID', nome:'Nome', morada:'Morada', orcamentoAnual:'Orçamento anual (€)', numero:'Nº',
     tipologia:'Tipologia', permilagem:'Permilagem (‰)', areaM2:'Área (m²)', fracaoId:'Fração',
     mes:'Mês', ano:'Ano', valor:'Valor (€)', estado:'Estado', nif:'NIF', email:'Email',
     telefone:'Telefone', tipo:'Tipo', bloco:'Bloco', numeroPisos:'Pisos', tema:'Tema',
     tipoMaioria:'Maioria', data:'Data', hora:'Hora', local:'Local', ordemTrabalhos:'Ordem de trabalhos',
-    ativo:'Ativo', perfis:'Perfis'
+    ativo:'Ativo', perfis:'Perfis', descricao:'Descrição', categoria:'Categoria', dataDespesa:'Data'
 };
 const HIDE = new Set(['idEmpresa','createdAt','updatedAt','dataInicio','dataFim','condominioId','edificioId','reuniaoId','idCondomino']);
 const MONEY = ['orcamentoAnual','valor'];
 const charts = {};
 const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modal'));
 let currentCond = null, onSubmitModal = null;
-const cache = { cond: [], frac: [], quotas: [], users: [] };
+const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [] };
 
-// Perfis e matriz de permissões (funcionalidade × ação) — nomes = enums do backend.
 const PERFIS_ALL = [
-    { value: 'CONDOMINO', label: 'Condómino' },
-    { value: 'ADMIN_CONDOMINIO', label: 'Administrador de Condomínio' },
-    { value: 'FUNCIONARIO', label: 'Funcionário' },
-    { value: 'GESTOR_EMPRESA', label: 'Gestor da empresa' },
+    { value: 'CONDOMINO', label: 'Condómino' }, { value: 'ADMIN_CONDOMINIO', label: 'Administrador de Condomínio' },
+    { value: 'FUNCIONARIO', label: 'Funcionário' }, { value: 'GESTOR_EMPRESA', label: 'Gestor da empresa' },
     { value: 'ADMIN_SISTEMA', label: 'Administrador do Sistema' }
 ];
 const perfisDisponiveis = () => isAdmin() ? PERFIS_ALL : PERFIS_ALL.filter(p => p.value !== 'ADMIN_SISTEMA');
-const FUNCS = [['EMPRESAS','Empresas'],['CONDOMINIOS','Condomínios'],['CONDOMINOS','Condóminos'],
-    ['UTILIZADORES','Utilizadores'],['ATAS','Atas'],['PAGAMENTOS','Pagamentos'],['REUNIOES','Reuniões'],
-    ['VOTACOES','Votações'],['DOCUMENTOS','Documentos'],['MENSAGENS','Mensagens']];
+const FUNCS = [['EMPRESAS','Empresas'],['CONDOMINIOS','Condomínios'],['CONDOMINOS','Condóminos'],['UTILIZADORES','Utilizadores'],
+    ['ATAS','Atas'],['PAGAMENTOS','Pagamentos'],['REUNIOES','Reuniões'],['VOTACOES','Votações'],['DOCUMENTOS','Documentos'],['MENSAGENS','Mensagens']];
 const ACS = [['CRIAR','Criar'],['EDITAR','Editar'],['APAGAR','Apagar'],['CONSULTAR','Consultar']];
 function matrizHTML(m, editable) {
     let h = '<table class="table table-sm text-center align-middle mb-0"><thead><tr><th class="text-start small">Funcionalidade</th>';
-    ACS.forEach(a => h += `<th class="small">${a[1]}</th>`);
-    h += '</tr></thead><tbody>';
-    FUNCS.forEach(([fk, fl]) => {
-        h += `<tr><td class="text-start small">${fl}</td>`;
-        ACS.forEach(([ak]) => {
-            const on = (m[fk] || []).includes(ak);
-            const id = editable ? `id="pm_${fk}_${ak}"` : '';
-            h += `<td><input type="checkbox" class="form-check-input" ${id} ${on ? 'checked' : ''} ${editable ? '' : 'disabled'}></td>`;
-        });
-        h += '</tr>';
-    });
+    ACS.forEach(a => h += `<th class="small">${a[1]}</th>`); h += '</tr></thead><tbody>';
+    FUNCS.forEach(([fk, fl]) => { h += `<tr><td class="text-start small">${fl}</td>`;
+        ACS.forEach(([ak]) => { const on = (m[fk] || []).includes(ak); const id = editable ? `id="pm_${fk}_${ak}"` : '';
+            h += `<td><input type="checkbox" class="form-check-input" ${id} ${on ? 'checked' : ''} ${editable ? '' : 'disabled'}></td>`; });
+        h += '</tr>'; });
     return h + '</tbody></table>';
 }
-
 function showAlert(msg, type='info') {
-    const el = document.getElementById('alert');
-    el.className = `alert alert-${type}`; el.textContent = msg;
+    const el = document.getElementById('alert'); el.className = `alert alert-${type}`; el.textContent = msg;
     el.classList.remove('d-none'); setTimeout(() => el.classList.add('d-none'), 5000);
 }
-function rows(data) { return Array.isArray(data) ? data : (data.conteudo || data.content || []); }
-function fmt(key, val) {
-    if (val === null || val === undefined) return '—';
-    if (MONEY.includes(key) && typeof val === 'number') return val.toFixed(2) + ' €';
-    if (Array.isArray(val)) return val.join(', ');
-    if (typeof val === 'boolean') return val ? 'Sim' : 'Não';
-    return String(val);
-}
+function rows(d) { return Array.isArray(d) ? d : (d.conteudo || d.content || []); }
+function fmt(k, v) { if (v === null || v === undefined) return '—'; if (MONEY.includes(k) && typeof v === 'number') return v.toFixed(2) + ' €'; if (Array.isArray(v)) return v.join(', '); if (typeof v === 'boolean') return v ? 'Sim' : 'Não'; return String(v); }
 function table(items, actionsFn) {
     if (!items.length) return '<p class="text-secondary">Sem registos.</p>';
     const keys = Object.keys(items[0]).filter(k => !HIDE.has(k));
     let h = '<table class="table table-sm table-hover align-middle"><thead><tr>';
-    keys.forEach(k => h += `<th>${LABELS[k] || k}</th>`);
-    if (actionsFn) h += '<th class="text-end">Ações</th>';
-    h += '</tr></thead><tbody>';
-    items.forEach(it => {
-        h += '<tr>';
-        keys.forEach(k => h += `<td>${fmt(k, it[k])}</td>`);
-        if (actionsFn) h += `<td class="text-end text-nowrap">${actionsFn(it)}</td>`;
-        h += '</tr>';
-    });
+    keys.forEach(k => h += `<th>${LABELS[k] || k}</th>`); if (actionsFn) h += '<th class="text-end">Ações</th>'; h += '</tr></thead><tbody>';
+    items.forEach(it => { h += '<tr>'; keys.forEach(k => h += `<td>${fmt(k, it[k])}</td>`); if (actionsFn) h += `<td class="text-end text-nowrap">${actionsFn(it)}</td>`; h += '</tr>'; });
     return h + '</tbody></table>';
 }
 async function apiSend(method, path, body) {
@@ -226,151 +191,146 @@ async function apiSend(method, path, body) {
     if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
     const res = await fetch(path, opt);
     if (res.status === 401) { logout(); throw new Error('Sessão expirada — entre novamente.'); }
-    const txt = await res.text();
-    let data; try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
+    const txt = await res.text(); let data; try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
     if (!res.ok) {
         if (res.status === 403) throw new Error('Sem permissão (403) para esta ação.');
-        const msg = (data && (data.message || data.mensagem || data.erro || data.detail)) || ('Erro ' + res.status);
-        throw new Error(msg);
+        throw new Error((data && (data.message || data.mensagem || data.erro || data.detail)) || ('Erro ' + res.status));
     }
     return data;
 }
-const apiGet = p => apiSend('GET', p);
-const apiPost = (p, b) => apiSend('POST', p, b);
-const apiPut = (p, b) => apiSend('PUT', p, b);
-const apiDel = p => apiSend('DELETE', p);
+const apiGet = p => apiSend('GET', p), apiPost = (p, b) => apiSend('POST', p, b), apiPut = (p, b) => apiSend('PUT', p, b), apiDel = p => apiSend('DELETE', p);
 function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+function btn(cls, label, onclick) { return `<button class="btn btn-sm ${cls}" onclick="${onclick}">${label}</button> `; }
 
-// ---------- Auth ----------
 async function doLogin(email, password) {
     const res = await fetch('/api/v1/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
     if (!res.ok) throw new Error('Credenciais inválidas.');
-    const data = await res.json();
-    sessionStorage.setItem('cm_token', data.token);
-    sessionStorage.setItem('cm_user', JSON.stringify(data.utilizador));
-    showApp();
+    const data = await res.json(); sessionStorage.setItem('cm_token', data.token); sessionStorage.setItem('cm_user', JSON.stringify(data.utilizador)); await showApp();
 }
 function logout() {
-    sessionStorage.clear();
-    document.getElementById('appView').classList.add('d-none');
-    document.getElementById('loginView').classList.remove('d-none');
+    sessionStorage.clear(); document.getElementById('appView').classList.add('d-none'); document.getElementById('loginView').classList.remove('d-none');
     ['logoutBtn','pwdBtn','userBadge'].forEach(id => document.getElementById(id).classList.add('d-none'));
 }
 function activateTab(name) {
     document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
     ['dashboard','condominios','votacoes','utilizadores','permissoes'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
 }
-function showApp() {
+async function showApp() {
     const u = user();
-    document.getElementById('loginView').classList.add('d-none');
-    document.getElementById('appView').classList.remove('d-none');
-    document.getElementById('logoutBtn').classList.remove('d-none');
-    document.getElementById('pwdBtn').classList.remove('d-none');
-    const badge = document.getElementById('userBadge');
-    badge.textContent = `${u.nome || ''} · ${(u.perfis || []).join(', ')}`;
-    badge.classList.remove('d-none');
+    document.getElementById('loginView').classList.add('d-none'); document.getElementById('appView').classList.remove('d-none');
+    document.getElementById('logoutBtn').classList.remove('d-none'); document.getElementById('pwdBtn').classList.remove('d-none');
+    const badge = document.getElementById('userBadge'); badge.textContent = `${u.nome || ''} · ${(u.perfis || []).join(', ')}`; badge.classList.remove('d-none');
     document.getElementById('navUtilizadores').classList.toggle('d-none', !canManageUsers());
     document.getElementById('navPermissoes').classList.toggle('d-none', !canManageUsers());
+    try { myPerms = await apiGet('/api/v1/permissoes/me') || {}; } catch { myPerms = {}; }
     const ab = document.getElementById('adminBanner');
     if (isAdmin()) {
         ab.classList.remove('d-none');
         ab.innerHTML = '👤 <strong>Administrador de plataforma.</strong> Gere <strong>Utilizadores</strong> e <strong>Permissões</strong> (os dados de condomínios devolvem 403 para esta conta).';
         activateTab('utilizadores'); loadUtilizadores();
-    } else {
-        ab.classList.add('d-none');
-        activateTab('dashboard'); loadDashboard();
-    }
+    } else { ab.classList.add('d-none'); activateTab('dashboard'); loadDashboard(); }
 }
 
-// ---------- Dashboard ----------
-function kpi(label, value, color) {
-    return `<div class="col-6 col-md-4 col-lg-2"><div class="card text-bg-${color} h-100"><div class="card-body py-2">
-        <div class="small">${label}</div><div class="h4 mb-0">${value}</div></div></div></div>`;
-}
+function kpi(label, value, color) { return `<div class="col-6 col-md-4 col-lg-2"><div class="card text-bg-${color} h-100"><div class="card-body py-2"><div class="small">${label}</div><div class="h4 mb-0">${value}</div></div></div></div>`; }
 function chart(id, type, labels, data, label) {
     if (charts[id]) charts[id].destroy();
-    charts[id] = new Chart(document.getElementById(id), {
-        type, data: { labels, datasets: [{ label, data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]) }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type !== 'bar' } } }
-    });
+    charts[id] = new Chart(document.getElementById(id), { type, data: { labels, datasets: [{ label, data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type !== 'bar' } } } });
 }
 async function loadDashboard() {
     try {
-        const d = await apiGet('/api/v1/dashboard');
-        const e = d.estrutura, f = d.financeiro;
-        document.getElementById('kpis').innerHTML =
-            kpi('Condomínios', e.condominios, 'primary') + kpi('Edifícios', e.edificios, 'info') +
-            kpi('Frações', e.fracoes, 'secondary') + kpi('Condóminos', e.condominos, 'success') +
-            kpi('Despesas (€)', Number(f.totalDespesas || 0).toFixed(2), 'warning') + kpi('Reuniões', d.reunioesAgendadas, 'dark');
-        chart('chartEstrutura', 'bar', ['Condomínios','Edifícios','Frações','Condóminos','Utilizadores'],
-            [e.condominios, e.edificios, e.fracoes, e.condominos, e.utilizadores], 'Total');
+        const d = await apiGet('/api/v1/dashboard'); const e = d.estrutura, f = d.financeiro;
+        document.getElementById('kpis').innerHTML = kpi('Condomínios', e.condominios, 'primary') + kpi('Edifícios', e.edificios, 'info') + kpi('Frações', e.fracoes, 'secondary') + kpi('Condóminos', e.condominos, 'success') + kpi('Despesas (€)', Number(f.totalDespesas || 0).toFixed(2), 'warning') + kpi('Reuniões', d.reunioesAgendadas, 'dark');
+        chart('chartEstrutura', 'bar', ['Condomínios','Edifícios','Frações','Condóminos','Utilizadores'], [e.condominios, e.edificios, e.fracoes, e.condominos, e.utilizadores], 'Total');
         const qc = f.quotasContagem || {}; chart('chartQuotas', 'doughnut', Object.keys(qc), Object.values(qc), 'Quotas');
         const qv = f.quotasValor || {}; chart('chartValor', 'bar', Object.keys(qv), Object.values(qv).map(Number), '€');
         const oc = d.ocorrenciasPorEstado || {}; chart('chartOcorrencias', 'doughnut', Object.keys(oc), Object.values(oc), 'Ocorrências');
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
-// ---------- Condomínios ----------
+// ---------- Condomínios + sub-entidades ----------
 async function loadCondominios() {
+    document.getElementById('btnNovoCond').classList.toggle('d-none', !can('CONDOMINIOS','CRIAR'));
     try {
         cache.cond = rows(await apiGet('/api/v1/condominios?size=50'));
-        document.getElementById('condominiosTable').innerHTML = table(cache.cond, c => `
-            <button class="btn btn-sm btn-primary" onclick="verCondominio(${c.id})">Visualizar</button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="editCondominio(${c.id})">Editar</button>
-            <button class="btn btn-sm btn-outline-danger" onclick="apagarCondominio(${c.id})">Apagar</button>`);
+        document.getElementById('condominiosTable').innerHTML = table(cache.cond, c =>
+            btn('btn-primary','Visualizar',`verCondominio(${c.id})`) +
+            (can('CONDOMINIOS','EDITAR') ? btn('btn-outline-secondary','Editar',`editCondominio(${c.id})`) : '') +
+            (can('CONDOMINIOS','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarCondominio(${c.id})`) : ''));
         document.getElementById('detalhe').innerHTML = '';
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 function verCondominio(id) {
-    const c = cache.cond.find(x => x.id === id);
-    currentCond = { id, nome: c.nome };
+    const c = cache.cond.find(x => x.id === id); currentCond = { id, nome: c.nome };
     document.getElementById('detalhe').innerHTML = `
       <div class="card"><div class="card-body">
         <h3 class="h6">${esc(c.nome)} <span class="text-secondary small">· orçamento ${Number(c.orcamentoAnual).toFixed(2)} €</span></h3>
         <div class="btn-group btn-group-sm flex-wrap mb-3">
-          <button class="btn btn-outline-secondary" onclick="loadFracoes()">Frações</button>
-          <button class="btn btn-outline-secondary" onclick="loadQuotas()">Quotas</button>
-          <button class="btn btn-success" onclick="openEdificio()">➕ Edifício</button>
-          <button class="btn btn-success" onclick="openFracao()">➕ Fração</button>
-          <button class="btn btn-warning" onclick="openGerarQuotas()">➕ Gerar quotas</button>
-          <button class="btn btn-outline-primary" onclick="baixar('pdf')">PDF</button>
+          <button class="btn btn-outline-primary" onclick="loadFracoes()">Frações</button>
+          <button class="btn btn-outline-primary" onclick="loadEdificios()">Edifícios</button>
+          <button class="btn btn-outline-primary" onclick="loadQuotas()">Quotas</button>
+          <button class="btn btn-outline-primary" onclick="loadDespesas()">Despesas</button>
+          <button class="btn btn-outline-primary" onclick="loadReunioes()">Reuniões</button>
+          <button class="btn btn-outline-success" onclick="baixar('pdf')">PDF</button>
           <button class="btn btn-outline-success" onclick="baixar('excel')">Excel</button>
         </div>
-        <div class="row"><div class="col-lg-7"><div id="subDetalhe"></div></div>
-        <div class="col-lg-5"><h4 class="h6">Permilagem por fração</h4>
-        <div style="position:relative;height:220px"><canvas id="chartPermilagem"></canvas></div></div></div>
+        <div id="subDetalhe"></div>
       </div></div>`;
     loadFracoes();
 }
+function subView(titulo, criarHtml, tabelaHtml, extra='') {
+    document.getElementById('subDetalhe').innerHTML =
+        `<div class="d-flex justify-content-between align-items-center mb-2"><h4 class="h6 mb-0">${titulo}</h4><div>${criarHtml}</div></div>${tabelaHtml}${extra}`;
+}
 async function loadFracoes() {
     cache.frac = rows(await apiGet(`/api/v1/fracoes?condominioId=${currentCond.id}&size=50`));
-    document.getElementById('subDetalhe').innerHTML = '<h4 class="h6">Frações</h4>' + table(cache.frac, f => `
-        <button class="btn btn-sm btn-outline-secondary" onclick="editFracao(${f.id})">Editar</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="apagarFracao(${f.id})">Apagar</button>`);
+    subView('Frações', btn('btn-success','➕ Nova fração','openFracao()'),
+        table(cache.frac, f => btn('btn-outline-info','Condóminos',`loadCondominosDe(${f.id},'${esc(f.numero)}')`) +
+            btn('btn-outline-secondary','Editar',`editFracao(${f.id})`) + btn('btn-outline-danger','Apagar',`apagarFracao(${f.id})`)),
+        '<div class="mt-3" style="position:relative;height:200px"><canvas id="chartPermilagem"></canvas></div>');
     chart('chartPermilagem', 'bar', cache.frac.map(f => 'Fr ' + f.numero), cache.frac.map(f => Number(f.permilagem)), 'Permilagem (‰)');
+}
+async function loadEdificios() {
+    cache.edif = rows(await apiGet(`/api/v1/edificios?condominioId=${currentCond.id}&size=50`));
+    subView('Edifícios', btn('btn-success','➕ Novo edifício','openEdificio()'),
+        table(cache.edif, e => btn('btn-outline-secondary','Editar',`editEdificio(${e.id})`) + btn('btn-outline-danger','Apagar',`apagarEdificio(${e.id})`)));
 }
 async function loadQuotas() {
     cache.quotas = rows(await apiGet(`/api/v1/quotas?condominioId=${currentCond.id}&size=50`));
-    document.getElementById('subDetalhe').innerHTML = '<h4 class="h6">Quotas</h4>' + table(cache.quotas, q =>
-        (['PENDENTE', 'ATRASADO'].includes(q.estado) ? `<button class="btn btn-sm btn-success" onclick="openPagar(${q.id})">Pagar</button>` : '—'));
+    subView('Quotas', btn('btn-warning','➕ Gerar quotas','openGerarQuotas()'),
+        table(cache.quotas, q => (['PENDENTE','ATRASADO'].includes(q.estado) && can('PAGAMENTOS','CRIAR') ? btn('btn-success','Pagar',`openPagar(${q.id})`) : '—')));
+}
+async function loadDespesas() {
+    cache.desp = rows(await apiGet(`/api/v1/despesas?condominioId=${currentCond.id}&size=50`));
+    subView('Despesas', btn('btn-success','➕ Nova despesa','openDespesa()'),
+        table(cache.desp, d => (d.estado === 'PENDENTE' ? btn('btn-outline-success','Aprovar',`aprovarDespesa(${d.id})`) + btn('btn-outline-warning','Rejeitar',`rejeitarDespesa(${d.id})`) : '') +
+            btn('btn-outline-secondary','Editar',`editDespesa(${d.id})`) + btn('btn-outline-danger','Apagar',`apagarDespesa(${d.id})`)));
+}
+async function loadReunioes() {
+    cache.reun = rows(await apiGet(`/api/v1/reunioes?condominioId=${currentCond.id}&size=50`));
+    subView('Reuniões', (can('REUNIOES','CRIAR') ? btn('btn-success','➕ Nova reunião','openReuniao()') : ''),
+        table(cache.reun, r => (can('REUNIOES','EDITAR') ? btn('btn-outline-secondary','Editar',`editReuniao(${r.id})`) + btn('btn-outline-info','Convocar',`convocarReuniao(${r.id})`) : '') +
+            (can('REUNIOES','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarReuniao(${r.id})`) : '')));
+}
+async function loadCondominosDe(fracaoId, numero) {
+    cache.cond_o = rows(await apiGet(`/api/v1/condominos?fracaoId=${fracaoId}&size=50`));
+    subView('Condóminos da fração ' + numero,
+        (can('CONDOMINOS','CRIAR') ? btn('btn-success','➕ Novo condómino',`openCondomino(${fracaoId})`) : '<span class="small text-secondary">só leitura</span>'),
+        table(cache.cond_o, o => (can('CONDOMINOS','EDITAR') ? btn('btn-outline-secondary','Editar',`editCondomino(${o.id})`) : '') +
+            (can('CONDOMINOS','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarCondomino(${o.id},${fracaoId},'${esc(numero)}')`) : '')));
 }
 async function baixar(fmt) {
     try {
         const path = fmt === 'pdf' ? `/api/v1/relatorios/quotas?condominioId=${currentCond.id}` : `/api/v1/relatorios/quotas/excel?condominioId=${currentCond.id}`;
-        const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } });
-        if (!res.ok) throw new Error('Erro ' + res.status);
-        const blob = await res.blob(); const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `relatorio-quotas-${currentCond.id}.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`;
-        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + token() } }); if (!res.ok) throw new Error('Erro ' + res.status);
+        const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a');
+        a.href = url; a.download = `relatorio-quotas-${currentCond.id}.${fmt === 'pdf' ? 'pdf' : 'xlsx'}`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
         showAlert('Relatório descarregado.', 'success');
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
-// ---------- Votações ----------
 async function loadVotacoes() {
     try {
-        const data = await apiGet('/api/v1/votacoes?size=50');
-        document.getElementById('votacoesTable').innerHTML = table(rows(data), v => `<button class="btn btn-sm btn-outline-primary" onclick="loadResultado(${v.id})">Resultado</button>`);
+        document.getElementById('votacoesTable').innerHTML = table(rows(await apiGet('/api/v1/votacoes?size=50')), v => btn('btn-outline-primary','Resultado',`loadResultado(${v.id})`));
         document.getElementById('resultadoVotacao').innerHTML = '';
     } catch (e) { showAlert(e.message, 'danger'); }
 }
@@ -378,256 +338,121 @@ async function loadResultado(id) {
     try {
         const r = await apiGet(`/api/v1/votacoes/${id}/resultado`);
         const aprov = r.aprovado ? '<span class="badge bg-success">APROVADO</span>' : '<span class="badge bg-danger">REPROVADO</span>';
-        document.getElementById('resultadoVotacao').innerHTML = `
-          <div class="card"><div class="card-body">
-            <h3 class="h6">Resultado — ${esc(r.tema)} ${aprov}</h3>
-            <p class="small text-secondary mb-2">Maioria exigida: ${r.tipoMaioria} · Estado: ${r.estado}</p>
-            <table class="table table-sm w-auto">
-              <tr><th>Capital total</th><td>${r.capitalTotal} ‰</td></tr>
-              <tr><th>Capital presente</th><td>${r.capitalPresente} ‰</td></tr>
-              <tr class="table-success"><th>A favor (SIM)</th><td>${r.somaSim} ‰</td></tr>
-              <tr class="table-danger"><th>Contra (NÃO)</th><td>${r.somaNao} ‰</td></tr>
-              <tr><th>Abstenção</th><td>${r.somaAbstencao} ‰</td></tr>
-              <tr><th>Nº de votos</th><td>${r.numeroVotos}</td></tr>
-            </table>
-            <p class="small text-secondary mb-0">Contagem por <strong>permilagem</strong> — Lei 8/2022.</p>
-          </div></div>`;
+        document.getElementById('resultadoVotacao').innerHTML = `<div class="card"><div class="card-body"><h3 class="h6">Resultado — ${esc(r.tema)} ${aprov}</h3>
+            <p class="small text-secondary mb-2">Maioria: ${r.tipoMaioria} · Estado: ${r.estado}</p>
+            <table class="table table-sm w-auto"><tr><th>Capital total</th><td>${r.capitalTotal} ‰</td></tr><tr><th>Presente</th><td>${r.capitalPresente} ‰</td></tr>
+            <tr class="table-success"><th>SIM</th><td>${r.somaSim} ‰</td></tr><tr class="table-danger"><th>NÃO</th><td>${r.somaNao} ‰</td></tr>
+            <tr><th>Abstenção</th><td>${r.somaAbstencao} ‰</td></tr><tr><th>Nº votos</th><td>${r.numeroVotos}</td></tr></table>
+            <p class="small text-secondary mb-0">Contagem por <strong>permilagem</strong> — Lei 8/2022.</p></div></div>`;
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
-// ---------- Utilizadores ----------
 async function loadUtilizadores() {
-    try { cache.users = rows(await apiGet('/api/v1/utilizadores?size=100')); renderUtilizadores(); }
-    catch (e) { showAlert(e.message, 'danger'); }
+    try { cache.users = rows(await apiGet('/api/v1/utilizadores?size=100')); renderUtilizadores(); } catch (e) { showAlert(e.message, 'danger'); }
 }
 function renderUtilizadores() {
     const q = (document.getElementById('userSearch').value || '').toLowerCase();
-    const items = cache.users.filter(u => !q ||
-        (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.perfis || []).join(',').toLowerCase().includes(q));
-    document.getElementById('utilizadoresTable').innerHTML = table(items, u => `
-        <button class="btn btn-sm btn-outline-secondary" onclick="editUtilizador(${u.id})">Editar</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="apagarUtilizador(${u.id})">Apagar</button>`);
+    const items = cache.users.filter(u => !q || (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.perfis || []).join(',').toLowerCase().includes(q));
+    document.getElementById('utilizadoresTable').innerHTML = table(items, u => btn('btn-outline-secondary','Editar',`editUtilizador(${u.id})`) + btn('btn-outline-danger','Apagar',`apagarUtilizador(${u.id})`));
 }
 async function fillMatrizUser(perfil) {
-    const box = document.getElementById('matrizPerm');
-    if (!box) return;
-    try { box.innerHTML = matrizHTML(await apiGet('/api/v1/permissoes/' + perfil), false); }
-    catch { box.innerHTML = '<p class="small text-secondary">Não foi possível carregar as permissões.</p>'; }
+    const box = document.getElementById('matrizPerm'); if (!box) return;
+    try { box.innerHTML = matrizHTML(await apiGet('/api/v1/permissoes/' + perfil), false); } catch { box.innerHTML = '<p class="small text-secondary">—</p>'; }
 }
-function wirePerfilMatriz() {
-    const sel = document.querySelector('#modalForm [name=perfil]');
-    if (sel) sel.addEventListener('change', e => fillMatrizUser(e.target.value));
-}
-function blocoMatriz() {
-    return '<label class="form-label small mt-2">Permissões do perfil (persistidas; geridas no separador Permissões)</label>' +
-        '<div id="matrizPerm" class="border rounded p-2" style="max-height:230px;overflow:auto"><p class="small text-secondary mb-0">a carregar…</p></div>';
-}
+function wirePerfilMatriz() { const s = document.querySelector('#modalForm [name=perfil]'); if (s) s.addEventListener('change', e => fillMatrizUser(e.target.value)); }
+function blocoMatriz() { return '<label class="form-label small mt-2">Permissões do perfil (geridas no separador Permissões)</label><div id="matrizPerm" class="border rounded p-2" style="max-height:230px;overflow:auto"><p class="small text-secondary mb-0">a carregar…</p></div>'; }
 function openNovoAcesso() {
     const perfis = perfisDisponiveis(); const def = perfis[0].value;
-    openModal('Criar novo acesso',
-        field('nome', 'Nome', 'text', 'required') + field('email', 'Email', 'email', 'required') +
-        field('password', 'Password (mín. 6)', 'password', 'minlength="6" required') +
-        selectField('perfil', 'Perfil', perfis.map(p => ({ value: p.value, label: p.label })), def) + blocoMatriz(),
-        async () => {
-            const d = formData();
-            await apiPost('/api/v1/utilizadores', { nome: d.nome, email: d.email, password: d.password, perfis: [d.perfil] });
-            showAlert('Acesso criado.', 'success'); loadUtilizadores();
-        }, '', true);
+    openModal('Criar novo acesso', field('nome','Nome','text','required') + field('email','Email','email','required') + field('password','Password (mín. 6)','password','minlength="6" required') + selectField('perfil','Perfil',perfis.map(p=>({value:p.value,label:p.label})),def) + blocoMatriz(),
+        async () => { const d = formData(); await apiPost('/api/v1/utilizadores', { nome: d.nome, email: d.email, password: d.password, perfis: [d.perfil] }); showAlert('Acesso criado.', 'success'); loadUtilizadores(); }, '', true);
     wirePerfilMatriz(); fillMatrizUser(def);
 }
 function editUtilizador(id) {
-    const u = cache.users.find(x => x.id === id);
-    const perfis = perfisDisponiveis(); const cur = (u.perfis && u.perfis[0]) || 'CONDOMINO';
-    openModal('Editar utilizador',
-        field('nome', 'Nome', 'text', 'required', esc(u.nome)) +
-        `<div class="mb-2"><label class="form-label small">Email (imutável)</label><input class="form-control form-control-sm" value="${esc(u.email)}" disabled></div>` +
-        selectField('ativo', 'Estado', [{ value: 'true', label: 'Ativo' }, { value: 'false', label: 'Inativo' }], String(u.ativo)) +
-        selectField('perfil', 'Perfil', perfis.map(p => ({ value: p.value, label: p.label })), cur) + blocoMatriz(),
-        async () => {
-            const d = formData();
-            await apiPut(`/api/v1/utilizadores/${id}`, { nome: d.nome, ativo: d.ativo === 'true', perfis: [d.perfil] });
-            showAlert('Utilizador atualizado.', 'success'); loadUtilizadores();
-        }, '', true);
+    const u = cache.users.find(x => x.id === id); const perfis = perfisDisponiveis(); const cur = (u.perfis && u.perfis[0]) || 'CONDOMINO';
+    openModal('Editar utilizador', field('nome','Nome','text','required',esc(u.nome)) + `<div class="mb-2"><label class="form-label small">Email (imutável)</label><input class="form-control form-control-sm" value="${esc(u.email)}" disabled></div>` + selectField('ativo','Estado',[{value:'true',label:'Ativo'},{value:'false',label:'Inativo'}],String(u.ativo)) + selectField('perfil','Perfil',perfis.map(p=>({value:p.value,label:p.label})),cur) + blocoMatriz(),
+        async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${id}`, { nome: d.nome, ativo: d.ativo === 'true', perfis: [d.perfil] }); showAlert('Utilizador atualizado.', 'success'); loadUtilizadores(); }, '', true);
     wirePerfilMatriz(); fillMatrizUser(cur);
 }
-async function apagarUtilizador(id) {
-    if (!confirm('Desativar este utilizador?')) return;
-    try { await apiDel(`/api/v1/utilizadores/${id}`); showAlert('Utilizador desativado.', 'success'); loadUtilizadores(); }
-    catch (e) { showAlert(e.message, 'danger'); }
-}
+async function apagarUtilizador(id) { if (!confirm('Desativar este utilizador?')) return; try { await apiDel(`/api/v1/utilizadores/${id}`); showAlert('Utilizador desativado.', 'success'); loadUtilizadores(); } catch (e) { showAlert(e.message, 'danger'); } }
 
-// ---------- Permissões (gestão da matriz) ----------
 let permInit = false;
 async function loadPermPerfis() {
     const sel = document.getElementById('permPerfil');
-    if (!permInit) {
-        const perfis = await apiGet('/api/v1/permissoes/perfis');
-        sel.innerHTML = perfis.map(p => `<option value="${p}">${p}</option>`).join('');
-        document.getElementById('permReadonlyNote').classList.toggle('d-none', isAdmin());
-        document.getElementById('permSave').classList.toggle('d-none', !isAdmin());
-        permInit = true;
-    }
+    if (!permInit) { const perfis = await apiGet('/api/v1/permissoes/perfis'); sel.innerHTML = perfis.map(p => `<option value="${p}">${p}</option>`).join(''); document.getElementById('permReadonlyNote').classList.toggle('d-none', isAdmin()); document.getElementById('permSave').classList.toggle('d-none', !isAdmin()); permInit = true; }
     loadPermissoes();
 }
-async function loadPermissoes() {
-    const perfil = document.getElementById('permPerfil').value;
-    if (!perfil) return;
-    try {
-        const m = await apiGet('/api/v1/permissoes/' + perfil);
-        document.getElementById('permMatriz').innerHTML = matrizHTML(m, isAdmin());
-    } catch (e) { showAlert(e.message, 'danger'); }
-}
+async function loadPermissoes() { const p = document.getElementById('permPerfil').value; if (!p) return; try { document.getElementById('permMatriz').innerHTML = matrizHTML(await apiGet('/api/v1/permissoes/' + p), isAdmin()); } catch (e) { showAlert(e.message, 'danger'); } }
 async function savePermissoes() {
-    const perfil = document.getElementById('permPerfil').value;
-    const body = {};
-    FUNCS.forEach(([fk]) => {
-        const acoes = ACS.filter(([ak]) => { const el = document.getElementById(`pm_${fk}_${ak}`); return el && el.checked; }).map(([ak]) => ak);
-        if (acoes.length) body[fk] = acoes;
-    });
-    try { await apiPut('/api/v1/permissoes/' + perfil, body); showAlert('Permissões guardadas e aplicadas.', 'success'); }
-    catch (e) { showAlert(e.message, 'danger'); }
+    const perfil = document.getElementById('permPerfil').value; const body = {};
+    FUNCS.forEach(([fk]) => { const acoes = ACS.filter(([ak]) => { const el = document.getElementById(`pm_${fk}_${ak}`); return el && el.checked; }).map(([ak]) => ak); if (acoes.length) body[fk] = acoes; });
+    try { await apiPut('/api/v1/permissoes/' + perfil, body); showAlert('Permissões guardadas e aplicadas.', 'success'); if (perfil === (user().perfis||[]).map(r=>r.replace('ROLE_','')).find(x=>x)) { myPerms = await apiGet('/api/v1/permissoes/me'); } } catch (e) { showAlert(e.message, 'danger'); }
 }
 
 // ---------- Modais ----------
-function field(name, label, type='text', extra='', value='') {
-    return `<div class="mb-2"><label class="form-label small">${label}</label>
-        <input name="${name}" type="${type}" class="form-control form-control-sm" ${extra} value="${value}"></div>`;
-}
-function selectField(name, label, options, value='') {
-    let o = options.map(x => `<option value="${x.value}" ${String(x.value) === String(value) ? 'selected' : ''}>${x.label}</option>`).join('');
-    return `<div class="mb-2"><label class="form-label small">${label}</label>
-        <select name="${name}" class="form-select form-select-sm">${o}</select></div>`;
-}
+function field(name, label, type='text', extra='', value='') { return `<div class="mb-2"><label class="form-label small">${label}</label><input name="${name}" type="${type}" class="form-control form-control-sm" ${extra} value="${value}"></div>`; }
+function selectField(name, label, options, value='') { let o = options.map(x => `<option value="${x.value}" ${String(x.value) === String(value) ? 'selected' : ''}>${x.label}</option>`).join(''); return `<div class="mb-2"><label class="form-label small">${label}</label><select name="${name}" class="form-select form-select-sm">${o}</select></div>`; }
+function opts(arr) { return arr.map(v => ({ value: v, label: v })); }
 function openModal(title, fieldsHtml, submitFn, info='', large=false) {
     document.getElementById('modalDialog').className = 'modal-dialog' + (large ? ' modal-lg' : '');
-    document.getElementById('modalTitle').textContent = title;
-    document.getElementById('modalFields').innerHTML = fieldsHtml;
-    document.getElementById('modalError').classList.add('d-none');
-    const inf = document.getElementById('modalInfo');
-    if (info) { inf.innerHTML = info; inf.classList.remove('d-none'); } else inf.classList.add('d-none');
+    document.getElementById('modalTitle').textContent = title; document.getElementById('modalFields').innerHTML = fieldsHtml; document.getElementById('modalError').classList.add('d-none');
+    const inf = document.getElementById('modalInfo'); if (info) { inf.innerHTML = info; inf.classList.remove('d-none'); } else inf.classList.add('d-none');
     onSubmitModal = submitFn; modal().show();
 }
 function formData() { const o = {}; new FormData(document.getElementById('modalForm')).forEach((v, k) => o[k] = v); return o; }
 
-function openCondominio() {
-    openModal('Novo condomínio',
-        field('nome', 'Nome', 'text', 'required') + field('morada', 'Morada') + field('orcamentoAnual', 'Orçamento anual (€)', 'number', 'step="0.01" min="0" required'),
-        async () => { const d = formData(); await apiPost('/api/v1/condominios', { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio criado.', 'success'); loadCondominios(); });
-}
-function editCondominio(id) {
-    const c = cache.cond.find(x => x.id === id);
-    openModal('Editar condomínio',
-        field('nome', 'Nome', 'text', 'required', esc(c.nome)) + field('morada', 'Morada', 'text', '', esc(c.morada || '')) + field('orcamentoAnual', 'Orçamento anual (€)', 'number', 'step="0.01" min="0" required', c.orcamentoAnual),
-        async () => { const d = formData(); await apiPut(`/api/v1/condominios/${id}`, { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio atualizado.', 'success'); loadCondominios(); });
-}
-async function apagarCondominio(id) {
-    if (!confirm('Apagar este condomínio?')) return;
-    try { await apiDel(`/api/v1/condominios/${id}`); showAlert('Condomínio apagado.', 'success'); loadCondominios(); } catch (e) { showAlert(e.message, 'danger'); }
-}
-function openEdificio() {
-    openModal(`Novo edifício — ${currentCond.nome}`,
-        field('nome', 'Nome', 'text', 'required') + field('bloco', 'Bloco') + field('numeroPisos', 'Nº de pisos', 'number', 'min="0"'),
-        async () => { const d = formData(); await apiPost('/api/v1/edificios', { condominioId: currentCond.id, nome: d.nome, bloco: d.bloco, numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null }); showAlert('Edifício criado.', 'success'); });
-}
+function openCondominio() { openModal('Novo condomínio', field('nome','Nome','text','required') + field('morada','Morada') + field('orcamentoAnual','Orçamento anual (€)','number','step="0.01" min="0" required'), async () => { const d = formData(); await apiPost('/api/v1/condominios', { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio criado.', 'success'); loadCondominios(); }); }
+function editCondominio(id) { const c = cache.cond.find(x => x.id === id); openModal('Editar condomínio', field('nome','Nome','text','required',esc(c.nome)) + field('morada','Morada','text','',esc(c.morada || '')) + field('orcamentoAnual','Orçamento anual (€)','number','step="0.01" min="0" required',c.orcamentoAnual), async () => { const d = formData(); await apiPut(`/api/v1/condominios/${id}`, { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio atualizado.', 'success'); loadCondominios(); }); }
+async function apagarCondominio(id) { if (!confirm('Apagar este condomínio?')) return; try { await apiDel(`/api/v1/condominios/${id}`); showAlert('Condomínio apagado.', 'success'); loadCondominios(); } catch (e) { showAlert(e.message, 'danger'); } }
+
+function openEdificio() { openModal(`Novo edifício — ${currentCond.nome}`, field('nome','Nome','text','required') + field('bloco','Bloco') + field('numeroPisos','Nº de pisos','number','min="0"'), async () => { const d = formData(); await apiPost('/api/v1/edificios', { condominioId: currentCond.id, nome: d.nome, bloco: d.bloco, numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null }); showAlert('Edifício criado.', 'success'); loadEdificios(); }); }
+function editEdificio(id) { const e = cache.edif.find(x => x.id === id); openModal('Editar edifício', field('nome','Nome','text','required',esc(e.nome)) + field('bloco','Bloco','text','',esc(e.bloco || '')) + field('numeroPisos','Nº de pisos','number','min="0"',e.numeroPisos ?? ''), async () => { const d = formData(); await apiPut(`/api/v1/edificios/${id}`, { nome: d.nome, bloco: d.bloco, numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null }); showAlert('Edifício atualizado.', 'success'); loadEdificios(); }); }
+async function apagarEdificio(id) { if (!confirm('Apagar este edifício?')) return; try { await apiDel(`/api/v1/edificios/${id}`); showAlert('Edifício apagado.', 'success'); loadEdificios(); } catch (e) { showAlert(e.message, 'danger'); } }
+
 async function openFracao() {
     const eds = rows(await apiGet(`/api/v1/edificios?condominioId=${currentCond.id}&size=50`));
-    if (!eds.length) { showAlert('Crie primeiro um edifício neste condomínio.', 'warning'); return; }
-    openModal(`Nova fração — ${currentCond.nome}`,
-        selectField('edificioId', 'Edifício', eds.map(e => ({ value: e.id, label: e.nome }))) +
-        field('numero', 'Nº da fração', 'text', 'required') + field('tipologia', 'Tipologia (ex.: T2)') +
-        field('permilagem', 'Permilagem (‰, 0–1000)', 'number', 'step="0.0001" min="0" max="1000" required') + field('areaM2', 'Área (m²)', 'number', 'step="0.01" min="0"'),
+    if (!eds.length) { showAlert('Crie primeiro um edifício.', 'warning'); return; }
+    openModal(`Nova fração — ${currentCond.nome}`, selectField('edificioId','Edifício',eds.map(e=>({value:e.id,label:e.nome}))) + field('numero','Nº da fração','text','required') + field('tipologia','Tipologia (ex.: T2)') + field('permilagem','Permilagem (‰, 0–1000)','number','step="0.0001" min="0" max="1000" required') + field('areaM2','Área (m²)','number','step="0.01" min="0"'),
         async () => { const d = formData(); await apiPost('/api/v1/fracoes', { condominioId: currentCond.id, edificioId: Number(d.edificioId), numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração criada.', 'success'); loadFracoes(); });
 }
-function editFracao(id) {
-    const f = cache.frac.find(x => x.id === id);
-    openModal('Editar fração',
-        field('numero', 'Nº', 'text', 'required', esc(f.numero)) + field('tipologia', 'Tipologia', 'text', '', esc(f.tipologia || '')) +
-        field('permilagem', 'Permilagem (‰)', 'number', 'step="0.0001" min="0" max="1000" required', f.permilagem) + field('areaM2', 'Área (m²)', 'number', 'step="0.01" min="0"', f.areaM2 || ''),
-        async () => { const d = formData(); await apiPut(`/api/v1/fracoes/${id}`, { numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração atualizada.', 'success'); loadFracoes(); });
-}
-async function apagarFracao(id) {
-    if (!confirm('Apagar esta fração?')) return;
-    try { await apiDel(`/api/v1/fracoes/${id}`); showAlert('Fração apagada.', 'success'); loadFracoes(); } catch (e) { showAlert(e.message, 'danger'); }
-}
-function openGerarQuotas() {
-    const now = new Date();
-    openModal(`Gerar quotas — ${currentCond.nome}`,
-        field('mes', 'Mês (1–12)', 'number', 'min="1" max="12" required', now.getMonth() + 1) + field('ano', 'Ano', 'number', 'min="2000" max="2100" required', now.getFullYear()),
-        async () => { const d = formData(); const r = await apiPost('/api/v1/quotas/gerar', { condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano) }); showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success'); loadQuotas(); });
-}
-function openPagar(quotaId) {
-    const q = cache.quotas.find(x => x.id === quotaId);
-    openModal('Registar pagamento',
-        field('valor', 'Valor (€)', 'number', 'step="0.01" min="0.01" required', q.valor) +
-        selectField('metodo', 'Método', ['TRANSFERENCIA','MBWAY','MULTIBANCO','PAYPAL','DINHEIRO'].map(m => ({ value: m, label: m }))),
-        async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); loadQuotas(); }, `Quota #${quotaId} — ${q.mes}/${q.ano}`);
-}
-function openAlterarPassword() {
-    openModal('Alterar a minha password',
-        field('novaPassword', 'Nova password (6–72 caracteres)', 'password', 'minlength="6" required'),
-        async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${user().id}/password`, { novaPassword: d.novaPassword }); showAlert('Password alterada com sucesso.', 'success'); });
-}
+function editFracao(id) { const f = cache.frac.find(x => x.id === id); openModal('Editar fração', field('numero','Nº','text','required',esc(f.numero)) + field('tipologia','Tipologia','text','',esc(f.tipologia || '')) + field('permilagem','Permilagem (‰)','number','step="0.0001" min="0" max="1000" required',f.permilagem) + field('areaM2','Área (m²)','number','step="0.01" min="0"',f.areaM2 || ''), async () => { const d = formData(); await apiPut(`/api/v1/fracoes/${id}`, { numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração atualizada.', 'success'); loadFracoes(); }); }
+async function apagarFracao(id) { if (!confirm('Apagar esta fração?')) return; try { await apiDel(`/api/v1/fracoes/${id}`); showAlert('Fração apagada.', 'success'); loadFracoes(); } catch (e) { showAlert(e.message, 'danger'); } }
+
+function openCondomino(fracaoId) { openModal('Novo condómino', field('nome','Nome','text','required') + field('nif','NIF') + field('email','Email','email') + field('telefone','Telefone') + selectField('tipo','Tipo',opts(['PROPRIETARIO','INQUILINO'])), async () => { const d = formData(); await apiPost('/api/v1/condominos', { fracaoId, nome: d.nome, nif: d.nif, email: d.email, telefone: d.telefone, tipo: d.tipo }); showAlert('Condómino criado.', 'success'); loadCondominosDe(fracaoId, ''); }); }
+function editCondomino(id) { const o = cache.cond_o.find(x => x.id === id); openModal('Editar condómino', field('nome','Nome','text','required',esc(o.nome)) + field('nif','NIF','text','',esc(o.nif || '')) + field('email','Email','email','',esc(o.email || '')) + field('telefone','Telefone','text','',esc(o.telefone || '')) + selectField('tipo','Tipo',opts(['PROPRIETARIO','INQUILINO']),o.tipo), async () => { const d = formData(); await apiPut(`/api/v1/condominos/${id}`, { nome: d.nome, nif: d.nif, email: d.email, telefone: d.telefone, tipo: d.tipo }); showAlert('Condómino atualizado.', 'success'); loadCondominosDe(o.fracaoId, ''); }); }
+async function apagarCondomino(id, fracaoId, numero) { if (!confirm('Apagar este condómino?')) return; try { await apiDel(`/api/v1/condominos/${id}`); showAlert('Condómino apagado.', 'success'); loadCondominosDe(fracaoId, numero); } catch (e) { showAlert(e.message, 'danger'); } }
+
+function openDespesa() { openModal(`Nova despesa — ${currentCond.nome}`, field('descricao','Descrição','text','required') + selectField('categoria','Categoria',opts(['MANUTENCAO','LIMPEZA','SEGURO','AGUA','ELETRICIDADE','OUTROS'])) + field('valor','Valor (€)','number','step="0.01" min="0.01" required') + field('dataDespesa','Data','date','required'), async () => { const d = formData(); await apiPost('/api/v1/despesas', { condominioId: currentCond.id, descricao: d.descricao, categoria: d.categoria, valor: Number(d.valor), dataDespesa: d.dataDespesa }); showAlert('Despesa criada.', 'success'); loadDespesas(); }); }
+function editDespesa(id) { const x = cache.desp.find(d => d.id === id); openModal('Editar despesa', field('descricao','Descrição','text','required',esc(x.descricao)) + selectField('categoria','Categoria',opts(['MANUTENCAO','LIMPEZA','SEGURO','AGUA','ELETRICIDADE','OUTROS']),x.categoria) + field('valor','Valor (€)','number','step="0.01" min="0.01" required',x.valor) + field('dataDespesa','Data','date','required',x.dataDespesa), async () => { const d = formData(); await apiPut(`/api/v1/despesas/${id}`, { descricao: d.descricao, categoria: d.categoria, valor: Number(d.valor), dataDespesa: d.dataDespesa }); showAlert('Despesa atualizada.', 'success'); loadDespesas(); }); }
+async function aprovarDespesa(id) { try { await apiPost(`/api/v1/despesas/${id}/aprovar`); showAlert('Despesa aprovada.', 'success'); loadDespesas(); } catch (e) { showAlert(e.message, 'danger'); } }
+async function rejeitarDespesa(id) { try { await apiPost(`/api/v1/despesas/${id}/rejeitar`); showAlert('Despesa rejeitada.', 'success'); loadDespesas(); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarDespesa(id) { if (!confirm('Apagar esta despesa?')) return; try { await apiDel(`/api/v1/despesas/${id}`); showAlert('Despesa apagada.', 'success'); loadDespesas(); } catch (e) { showAlert(e.message, 'danger'); } }
+
+function openReuniao() { openModal(`Nova reunião — ${currentCond.nome}`, field('data','Data','date','required') + field('hora','Hora','time') + field('local','Local') + field('ordemTrabalhos','Ordem de trabalhos'), async () => { const d = formData(); await apiPost('/api/v1/reunioes', { condominioId: currentCond.id, data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião agendada.', 'success'); loadReunioes(); }); }
+function editReuniao(id) { const r = cache.reun.find(x => x.id === id); openModal('Editar reunião', field('data','Data','date','required',r.data) + field('hora','Hora','time','',r.hora || '') + field('local','Local','text','',esc(r.local || '')) + field('ordemTrabalhos','Ordem de trabalhos','text','',esc(r.ordemTrabalhos || '')), async () => { const d = formData(); await apiPut(`/api/v1/reunioes/${id}`, { data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião atualizada.', 'success'); loadReunioes(); }); }
+async function convocarReuniao(id) { if (!confirm('Enviar convocatória por email aos condóminos?')) return; try { const r = await apiPost(`/api/v1/reunioes/${id}/convocar`); showAlert(`Convocatória enviada (${r.emailsEnviados} emails).`, 'success'); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarReuniao(id) { if (!confirm('Apagar esta reunião?')) return; try { await apiDel(`/api/v1/reunioes/${id}`); showAlert('Reunião apagada.', 'success'); loadReunioes(); } catch (e) { showAlert(e.message, 'danger'); } }
+
+function openGerarQuotas() { const now = new Date(); openModal(`Gerar quotas — ${currentCond.nome}`, field('mes','Mês (1–12)','number','min="1" max="12" required',now.getMonth() + 1) + field('ano','Ano','number','min="2000" max="2100" required',now.getFullYear()), async () => { const d = formData(); const r = await apiPost('/api/v1/quotas/gerar', { condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano) }); showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success'); loadQuotas(); }); }
+function openPagar(quotaId) { const q = cache.quotas.find(x => x.id === quotaId); openModal('Registar pagamento', field('valor','Valor (€)','number','step="0.01" min="0.01" required',q.valor) + selectField('metodo','Método',opts(['TRANSFERENCIA','MBWAY','MULTIBANCO','PAYPAL','DINHEIRO'])), async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); loadQuotas(); }, `Quota #${quotaId} — ${q.mes}/${q.ano}`); }
+function openAlterarPassword() { openModal('Alterar a minha password', field('novaPassword','Nova password (6–72 caracteres)','password','minlength="6" required'), async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${user().id}/password`, { novaPassword: d.novaPassword }); showAlert('Password alterada.', 'success'); }); }
 function openRecuperar() {
-    openModal('Recuperar password',
-        field('email', 'Email da conta', 'email', 'required') +
-        '<hr><p class="small text-secondary mb-2">Já tens um token? Redefine aqui:</p>' +
-        field('token', 'Token de recuperação') + field('novaPassword', 'Nova password', 'password', 'minlength="6"'),
-        async () => {
-            const d = formData();
-            if (d.token && d.novaPassword) {
-                const res = await fetch('/api/v1/auth/redefinir-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: d.token, novaPassword: d.novaPassword }) });
-                if (!res.ok) throw new Error('Token inválido ou expirado.');
-                showAlert('Password redefinida. Já podes entrar.', 'success');
-            } else if (d.email) {
-                await fetch('/api/v1/auth/recuperar-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: d.email }) });
-                showAlert('Se a conta existir, foi enviado um email com o token (ou registado no log, se o SMTP estiver desligado).', 'info');
-            } else throw new Error('Indica o email (para pedir) ou token + nova password (para redefinir).');
-        },
-        'O envio do token por <strong>email</strong> exige SMTP ativo (<code>MAIL_ENABLED=true</code>). Sem SMTP, o token é registado no log.');
+    openModal('Recuperar password', field('email','Email da conta','email','required') + '<hr><p class="small text-secondary mb-2">Já tens um token? Redefine aqui:</p>' + field('token','Token de recuperação') + field('novaPassword','Nova password','password','minlength="6"'),
+        async () => { const d = formData();
+            if (d.token && d.novaPassword) { const res = await fetch('/api/v1/auth/redefinir-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: d.token, novaPassword: d.novaPassword }) }); if (!res.ok) throw new Error('Token inválido ou expirado.'); showAlert('Password redefinida. Já podes entrar.', 'success'); }
+            else if (d.email) { await fetch('/api/v1/auth/recuperar-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: d.email }) }); showAlert('Se a conta existir, foi enviado um email com o token (ou registado no log, se o SMTP estiver desligado).', 'info'); }
+            else throw new Error('Indica o email (para pedir) ou token + nova password (para redefinir).'); },
+        'O envio do token por <strong>email</strong> exige SMTP ativo (<code>MAIL_ENABLED=true</code>).');
 }
+document.getElementById('modalForm').addEventListener('submit', async (e) => { e.preventDefault(); const err = document.getElementById('modalError'); err.classList.add('d-none'); try { await onSubmitModal(); modal().hide(); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); } });
 
-document.getElementById('modalForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const err = document.getElementById('modalError'); err.classList.add('d-none');
-    try { await onSubmitModal(); modal().hide(); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); }
-});
+async function loadHealth() { const b = document.getElementById('healthBadge'); try { const d = await (await fetch('/api/v1/health')).json(); b.className = 'badge bg-success'; b.textContent = 'serviço: ' + (d.status || 'UP'); } catch { b.className = 'badge bg-danger'; b.textContent = 'serviço: indisponível'; } }
 
-// ---------- Health ----------
-async function loadHealth() {
-    const b = document.getElementById('healthBadge');
-    try { const d = await (await fetch('/api/v1/health')).json(); b.className = 'badge bg-success'; b.textContent = 'serviço: ' + (d.status || 'UP'); }
-    catch { b.className = 'badge bg-danger'; b.textContent = 'serviço: indisponível'; }
-}
-
-// ---------- Eventos ----------
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const err = document.getElementById('loginError'); err.classList.add('d-none');
-    const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.textContent = 'A entrar…';
-    try { await doLogin(document.getElementById('email').value, document.getElementById('password').value); }
-    catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); }
-    finally { btn.disabled = false; btn.textContent = 'Entrar'; }
-});
+document.getElementById('loginForm').addEventListener('submit', async (e) => { e.preventDefault(); const err = document.getElementById('loginError'); err.classList.add('d-none'); const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.textContent = 'A entrar…'; try { await doLogin(document.getElementById('email').value, document.getElementById('password').value); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); } finally { btn.disabled = false; btn.textContent = 'Entrar'; } });
 document.getElementById('logoutBtn').addEventListener('click', logout);
-document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
-    const tab = b.dataset.tab;
-    activateTab(tab);
-    if (tab === 'utilizadores') { loadUtilizadores(); return; }
-    if (tab === 'permissoes') { loadPermPerfis(); return; }
-    if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores e Permissões.', 'info'); return; }
-    if (tab === 'dashboard') loadDashboard();
-    if (tab === 'condominios') loadCondominios();
-    if (tab === 'votacoes') loadVotacoes();
-}));
-const themeSaved = localStorage.getItem('theme');
-if (themeSaved) document.documentElement.dataset.bsTheme = themeSaved;
-document.getElementById('themeToggle').addEventListener('click', () => {
-    const h = document.documentElement;
-    h.dataset.bsTheme = h.dataset.bsTheme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('theme', h.dataset.bsTheme);
-});
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { const tab = b.dataset.tab; activateTab(tab); if (tab === 'utilizadores') { loadUtilizadores(); return; } if (tab === 'permissoes') { loadPermPerfis(); return; } if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores e Permissões.', 'info'); return; } if (tab === 'dashboard') loadDashboard(); if (tab === 'condominios') loadCondominios(); if (tab === 'votacoes') loadVotacoes(); }));
+const themeSaved = localStorage.getItem('theme'); if (themeSaved) document.documentElement.dataset.bsTheme = themeSaved;
+document.getElementById('themeToggle').addEventListener('click', () => { const h = document.documentElement; h.dataset.bsTheme = h.dataset.bsTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', h.dataset.bsTheme); });
 
-// ---------- Arranque ----------
 loadHealth();
 if (token()) showApp();
 </script>
