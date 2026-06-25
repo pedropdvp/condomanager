@@ -26,26 +26,24 @@
     <!-- ===== LOGIN ===== -->
     <section id="loginView" class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h1 class="h4 card-title mb-3">Entrar</h1>
-                    <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
-                    <form id="loginForm">
-                        <div class="mb-3"><label class="form-label">Email</label>
-                            <input id="email" type="email" class="form-control" value="gestor.alfa@demo.local" required></div>
-                        <div class="mb-3"><label class="form-label">Password</label>
-                            <input id="password" type="password" class="form-control" value="gestor123" required></div>
-                        <button id="loginBtn" class="btn btn-primary w-100" type="submit">Entrar</button>
-                    </form>
-                    <p class="mt-2 mb-0 text-end"><a href="#" onclick="openRecuperar();return false;" class="small">Recuperar password</a></p>
-                    <hr>
-                    <p class="small text-secondary mb-1">Contas de demonstração:</p>
-                    <ul class="small text-secondary mb-0">
-                        <li>Gestor: <code>gestor.alfa@demo.local</code> / <code>gestor123</code> (gere condomínios)</li>
-                        <li>Admin: <code>admin@condomanager.local</code> / <code>admin123</code> (admin de plataforma)</li>
-                    </ul>
-                </div>
-            </div>
+            <div class="card shadow-sm"><div class="card-body">
+                <h1 class="h4 card-title mb-3">Entrar</h1>
+                <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+                <form id="loginForm">
+                    <div class="mb-3"><label class="form-label">Email</label>
+                        <input id="email" type="email" class="form-control" value="gestor.alfa@demo.local" required></div>
+                    <div class="mb-3"><label class="form-label">Password</label>
+                        <input id="password" type="password" class="form-control" value="gestor123" required></div>
+                    <button id="loginBtn" class="btn btn-primary w-100" type="submit">Entrar</button>
+                </form>
+                <p class="mt-2 mb-0 text-end"><a href="#" onclick="openRecuperar();return false;" class="small">Recuperar password</a></p>
+                <hr>
+                <p class="small text-secondary mb-1">Contas de demonstração:</p>
+                <ul class="small text-secondary mb-0">
+                    <li>Gestor: <code>gestor.alfa@demo.local</code> / <code>gestor123</code></li>
+                    <li>Admin: <code>admin@condomanager.local</code> / <code>admin123</code></li>
+                </ul>
+            </div></div>
         </div>
     </section>
 
@@ -57,6 +55,7 @@
             <li class="nav-item"><button class="nav-link" data-tab="condominios">🏢 Condomínios</button></li>
             <li class="nav-item"><button class="nav-link" data-tab="votacoes">🗳️ Votações</button></li>
             <li class="nav-item d-none" id="navUtilizadores"><button class="nav-link" data-tab="utilizadores">👥 Utilizadores</button></li>
+            <li class="nav-item d-none" id="navPermissoes"><button class="nav-link" data-tab="permissoes">🔐 Permissões</button></li>
         </ul>
 
         <div id="alert" class="alert d-none" role="alert"></div>
@@ -107,6 +106,19 @@
             <input id="userSearch" class="form-control form-control-sm mb-2" placeholder="Pesquisar por nome, email ou perfil…" oninput="renderUtilizadores()">
             <div id="utilizadoresTable" class="table-responsive"></div>
         </div>
+
+        <!-- Permissões -->
+        <div id="tab-permissoes" class="d-none">
+            <h2 class="h5 mb-2">Permissões por perfil (RBAC granular)</h2>
+            <div id="permReadonlyNote" class="alert alert-warning small d-none">Modo de consulta — apenas o <strong>Administrador do Sistema</strong> pode editar permissões (UC04 – Gerir permissões).</div>
+            <div class="row g-2 align-items-end mb-2">
+                <div class="col-auto"><label class="form-label small mb-0">Perfil</label>
+                    <select id="permPerfil" class="form-select form-select-sm" onchange="loadPermissoes()"></select></div>
+                <div class="col-auto"><button id="permSave" class="btn btn-sm btn-success d-none" onclick="savePermissoes()">Guardar</button></div>
+            </div>
+            <div id="permMatriz" class="table-responsive"></div>
+            <p class="small text-secondary">Cada ✔ é uma permissão <strong>persistida na BD</strong> e <strong>aplicada</strong> nos endpoints (referência: Condomínios). O <code>ADMIN_SISTEMA</code> tem acesso total.</p>
+        </div>
     </section>
 </main>
 
@@ -152,7 +164,7 @@ const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById(
 let currentCond = null, onSubmitModal = null;
 const cache = { cond: [], frac: [], quotas: [], users: [] };
 
-// Perfis (RBAC) e matriz de capacidades por perfil (guia visual; aplicação é por perfil).
+// Perfis e matriz de permissões (funcionalidade × ação) — nomes = enums do backend.
 const PERFIS_ALL = [
     { value: 'CONDOMINO', label: 'Condómino' },
     { value: 'ADMIN_CONDOMINIO', label: 'Administrador de Condomínio' },
@@ -161,26 +173,21 @@ const PERFIS_ALL = [
     { value: 'ADMIN_SISTEMA', label: 'Administrador do Sistema' }
 ];
 const perfisDisponiveis = () => isAdmin() ? PERFIS_ALL : PERFIS_ALL.filter(p => p.value !== 'ADMIN_SISTEMA');
-const MODULOS = ['Empresas','Condominios','Condominos','Utilizadores','Atas','Pagamentos','Reunioes','Votacoes','Documentos','Mensagens'];
-const ACOES = [['Criar','C'],['Editar','E'],['Apagar','A'],['Consultar','X']];
-const CAP = {
-    ADMIN_SISTEMA: 'all',
-    GESTOR_EMPRESA: { Empresas:'CEAX', Condominios:'CEAX', Condominos:'X', Utilizadores:'CEAX', Atas:'CEAX', Pagamentos:'CX', Reunioes:'CEX', Votacoes:'CEX', Documentos:'CX', Mensagens:'CX' },
-    FUNCIONARIO:    { Empresas:'X',  Condominios:'CEX',  Condominos:'CEX', Utilizadores:'',     Atas:'CEX',  Pagamentos:'CX', Reunioes:'X',   Votacoes:'X',   Documentos:'X',  Mensagens:'CX' },
-    ADMIN_CONDOMINIO:{Empresas:'',   Condominios:'X',    Condominos:'CEAX',Utilizadores:'',     Atas:'CEAX', Pagamentos:'X',  Reunioes:'CX',  Votacoes:'X',   Documentos:'X',  Mensagens:'CX' },
-    CONDOMINO:      { Empresas:'',   Condominios:'',     Condominos:'',    Utilizadores:'',     Atas:'X',    Pagamentos:'CX', Reunioes:'X',   Votacoes:'CX',  Documentos:'X',  Mensagens:'C' }
-};
-function capHas(perfil, modulo, letter) {
-    const c = CAP[perfil]; if (c === 'all') return true;
-    return ((c && c[modulo]) || '').includes(letter);
-}
-function renderMatriz(perfil) {
+const FUNCS = [['EMPRESAS','Empresas'],['CONDOMINIOS','Condomínios'],['CONDOMINOS','Condóminos'],
+    ['UTILIZADORES','Utilizadores'],['ATAS','Atas'],['PAGAMENTOS','Pagamentos'],['REUNIOES','Reuniões'],
+    ['VOTACOES','Votações'],['DOCUMENTOS','Documentos'],['MENSAGENS','Mensagens']];
+const ACS = [['CRIAR','Criar'],['EDITAR','Editar'],['APAGAR','Apagar'],['CONSULTAR','Consultar']];
+function matrizHTML(m, editable) {
     let h = '<table class="table table-sm text-center align-middle mb-0"><thead><tr><th class="text-start small">Funcionalidade</th>';
-    ACOES.forEach(a => h += `<th class="small">${a[0]}</th>`);
+    ACS.forEach(a => h += `<th class="small">${a[1]}</th>`);
     h += '</tr></thead><tbody>';
-    MODULOS.forEach(m => {
-        h += `<tr><td class="text-start small">${m}</td>`;
-        ACOES.forEach(a => h += `<td><input type="checkbox" class="form-check-input" ${capHas(perfil, m, a[1]) ? 'checked' : ''} disabled></td>`);
+    FUNCS.forEach(([fk, fl]) => {
+        h += `<tr><td class="text-start small">${fl}</td>`;
+        ACS.forEach(([ak]) => {
+            const on = (m[fk] || []).includes(ak);
+            const id = editable ? `id="pm_${fk}_${ak}"` : '';
+            h += `<td><input type="checkbox" class="form-check-input" ${id} ${on ? 'checked' : ''} ${editable ? '' : 'disabled'}></td>`;
+        });
         h += '</tr>';
     });
     return h + '</tbody></table>';
@@ -222,8 +229,7 @@ async function apiSend(method, path, body) {
     const txt = await res.text();
     let data; try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
     if (!res.ok) {
-        if (res.status === 403)
-            throw new Error('Sem permissão (403). Esta conta não tem acesso a este recurso — use uma conta de gestor (gestor.alfa@demo.local).');
+        if (res.status === 403) throw new Error('Sem permissão (403) para esta ação.');
         const msg = (data && (data.message || data.mensagem || data.erro || data.detail)) || ('Erro ' + res.status);
         throw new Error(msg);
     }
@@ -252,7 +258,7 @@ function logout() {
 }
 function activateTab(name) {
     document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
-    ['dashboard','condominios','votacoes','utilizadores'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
+    ['dashboard','condominios','votacoes','utilizadores','permissoes'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
 }
 function showApp() {
     const u = user();
@@ -264,10 +270,11 @@ function showApp() {
     badge.textContent = `${u.nome || ''} · ${(u.perfis || []).join(', ')}`;
     badge.classList.remove('d-none');
     document.getElementById('navUtilizadores').classList.toggle('d-none', !canManageUsers());
+    document.getElementById('navPermissoes').classList.toggle('d-none', !canManageUsers());
     const ab = document.getElementById('adminBanner');
     if (isAdmin()) {
         ab.classList.remove('d-none');
-        ab.innerHTML = '👤 <strong>Administrador de plataforma.</strong> Esta conta gere empresas/tenants e utilizadores, não condomínios diretamente (esses dados devolvem 403). Veja o separador <strong>Utilizadores</strong>.';
+        ab.innerHTML = '👤 <strong>Administrador de plataforma.</strong> Gere <strong>Utilizadores</strong> e <strong>Permissões</strong> (os dados de condomínios devolvem 403 para esta conta).';
         activateTab('utilizadores'); loadUtilizadores();
     } else {
         ab.classList.add('d-none');
@@ -303,7 +310,7 @@ async function loadDashboard() {
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
-// ---------- Condomínios (CRUD) ----------
+// ---------- Condomínios ----------
 async function loadCondominios() {
     try {
         cache.cond = rows(await apiGet('/api/v1/condominios?size=50'));
@@ -383,12 +390,12 @@ async function loadResultado(id) {
               <tr><th>Abstenção</th><td>${r.somaAbstencao} ‰</td></tr>
               <tr><th>Nº de votos</th><td>${r.numeroVotos}</td></tr>
             </table>
-            <p class="small text-secondary mb-0">Contagem por <strong>permilagem</strong> (peso da fração), não por nº de pessoas — Lei 8/2022.</p>
+            <p class="small text-secondary mb-0">Contagem por <strong>permilagem</strong> — Lei 8/2022.</p>
           </div></div>`;
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
-// ---------- Utilizadores (Gestão de acessos) ----------
+// ---------- Utilizadores ----------
 async function loadUtilizadores() {
     try { cache.users = rows(await apiGet('/api/v1/utilizadores?size=100')); renderUtilizadores(); }
     catch (e) { showAlert(e.message, 'danger'); }
@@ -396,34 +403,37 @@ async function loadUtilizadores() {
 function renderUtilizadores() {
     const q = (document.getElementById('userSearch').value || '').toLowerCase();
     const items = cache.users.filter(u => !q ||
-        (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) ||
-        (u.perfis || []).join(',').toLowerCase().includes(q));
+        (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.perfis || []).join(',').toLowerCase().includes(q));
     document.getElementById('utilizadoresTable').innerHTML = table(items, u => `
         <button class="btn btn-sm btn-outline-secondary" onclick="editUtilizador(${u.id})">Editar</button>
         <button class="btn btn-sm btn-outline-danger" onclick="apagarUtilizador(${u.id})">Apagar</button>`);
 }
+async function fillMatrizUser(perfil) {
+    const box = document.getElementById('matrizPerm');
+    if (!box) return;
+    try { box.innerHTML = matrizHTML(await apiGet('/api/v1/permissoes/' + perfil), false); }
+    catch { box.innerHTML = '<p class="small text-secondary">Não foi possível carregar as permissões.</p>'; }
+}
 function wirePerfilMatriz() {
     const sel = document.querySelector('#modalForm [name=perfil]');
-    if (sel) sel.addEventListener('change', e => { document.getElementById('matrizPerm').innerHTML = renderMatriz(e.target.value); });
+    if (sel) sel.addEventListener('change', e => fillMatrizUser(e.target.value));
 }
-function blocoMatriz(perfil) {
-    return '<label class="form-label small mt-2">Permissões de acesso (pré-preenchidas pelo perfil)</label>' +
-        `<div id="matrizPerm" class="border rounded p-2" style="max-height:230px;overflow:auto">${renderMatriz(perfil)}</div>` +
-        '<p class="small text-secondary mt-1 mb-0">Aplicadas pelo <strong>perfil (RBAC)</strong>. A personalização por ação é um módulo futuro.</p>';
+function blocoMatriz() {
+    return '<label class="form-label small mt-2">Permissões do perfil (persistidas; geridas no separador Permissões)</label>' +
+        '<div id="matrizPerm" class="border rounded p-2" style="max-height:230px;overflow:auto"><p class="small text-secondary mb-0">a carregar…</p></div>';
 }
 function openNovoAcesso() {
     const perfis = perfisDisponiveis(); const def = perfis[0].value;
     openModal('Criar novo acesso',
         field('nome', 'Nome', 'text', 'required') + field('email', 'Email', 'email', 'required') +
         field('password', 'Password (mín. 6)', 'password', 'minlength="6" required') +
-        selectField('perfil', 'Perfil', perfis.map(p => ({ value: p.value, label: p.label })), def) +
-        blocoMatriz(def),
+        selectField('perfil', 'Perfil', perfis.map(p => ({ value: p.value, label: p.label })), def) + blocoMatriz(),
         async () => {
             const d = formData();
             await apiPost('/api/v1/utilizadores', { nome: d.nome, email: d.email, password: d.password, perfis: [d.perfil] });
             showAlert('Acesso criado.', 'success'); loadUtilizadores();
         }, '', true);
-    wirePerfilMatriz();
+    wirePerfilMatriz(); fillMatrizUser(def);
 }
 function editUtilizador(id) {
     const u = cache.users.find(x => x.id === id);
@@ -432,18 +442,49 @@ function editUtilizador(id) {
         field('nome', 'Nome', 'text', 'required', esc(u.nome)) +
         `<div class="mb-2"><label class="form-label small">Email (imutável)</label><input class="form-control form-control-sm" value="${esc(u.email)}" disabled></div>` +
         selectField('ativo', 'Estado', [{ value: 'true', label: 'Ativo' }, { value: 'false', label: 'Inativo' }], String(u.ativo)) +
-        selectField('perfil', 'Perfil', perfis.map(p => ({ value: p.value, label: p.label })), cur) +
-        blocoMatriz(cur),
+        selectField('perfil', 'Perfil', perfis.map(p => ({ value: p.value, label: p.label })), cur) + blocoMatriz(),
         async () => {
             const d = formData();
             await apiPut(`/api/v1/utilizadores/${id}`, { nome: d.nome, ativo: d.ativo === 'true', perfis: [d.perfil] });
             showAlert('Utilizador atualizado.', 'success'); loadUtilizadores();
         }, '', true);
-    wirePerfilMatriz();
+    wirePerfilMatriz(); fillMatrizUser(cur);
 }
 async function apagarUtilizador(id) {
     if (!confirm('Desativar este utilizador?')) return;
     try { await apiDel(`/api/v1/utilizadores/${id}`); showAlert('Utilizador desativado.', 'success'); loadUtilizadores(); }
+    catch (e) { showAlert(e.message, 'danger'); }
+}
+
+// ---------- Permissões (gestão da matriz) ----------
+let permInit = false;
+async function loadPermPerfis() {
+    const sel = document.getElementById('permPerfil');
+    if (!permInit) {
+        const perfis = await apiGet('/api/v1/permissoes/perfis');
+        sel.innerHTML = perfis.map(p => `<option value="${p}">${p}</option>`).join('');
+        document.getElementById('permReadonlyNote').classList.toggle('d-none', isAdmin());
+        document.getElementById('permSave').classList.toggle('d-none', !isAdmin());
+        permInit = true;
+    }
+    loadPermissoes();
+}
+async function loadPermissoes() {
+    const perfil = document.getElementById('permPerfil').value;
+    if (!perfil) return;
+    try {
+        const m = await apiGet('/api/v1/permissoes/' + perfil);
+        document.getElementById('permMatriz').innerHTML = matrizHTML(m, isAdmin());
+    } catch (e) { showAlert(e.message, 'danger'); }
+}
+async function savePermissoes() {
+    const perfil = document.getElementById('permPerfil').value;
+    const body = {};
+    FUNCS.forEach(([fk]) => {
+        const acoes = ACS.filter(([ak]) => { const el = document.getElementById(`pm_${fk}_${ak}`); return el && el.checked; }).map(([ak]) => ak);
+        if (acoes.length) body[fk] = acoes;
+    });
+    try { await apiPut('/api/v1/permissoes/' + perfil, body); showAlert('Permissões guardadas e aplicadas.', 'success'); }
     catch (e) { showAlert(e.message, 'danger'); }
 }
 
@@ -470,15 +511,13 @@ function formData() { const o = {}; new FormData(document.getElementById('modalF
 
 function openCondominio() {
     openModal('Novo condomínio',
-        field('nome', 'Nome', 'text', 'required') + field('morada', 'Morada') +
-        field('orcamentoAnual', 'Orçamento anual (€)', 'number', 'step="0.01" min="0" required'),
+        field('nome', 'Nome', 'text', 'required') + field('morada', 'Morada') + field('orcamentoAnual', 'Orçamento anual (€)', 'number', 'step="0.01" min="0" required'),
         async () => { const d = formData(); await apiPost('/api/v1/condominios', { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio criado.', 'success'); loadCondominios(); });
 }
 function editCondominio(id) {
     const c = cache.cond.find(x => x.id === id);
     openModal('Editar condomínio',
-        field('nome', 'Nome', 'text', 'required', esc(c.nome)) + field('morada', 'Morada', 'text', '', esc(c.morada || '')) +
-        field('orcamentoAnual', 'Orçamento anual (€)', 'number', 'step="0.01" min="0" required', c.orcamentoAnual),
+        field('nome', 'Nome', 'text', 'required', esc(c.nome)) + field('morada', 'Morada', 'text', '', esc(c.morada || '')) + field('orcamentoAnual', 'Orçamento anual (€)', 'number', 'step="0.01" min="0" required', c.orcamentoAnual),
         async () => { const d = formData(); await apiPut(`/api/v1/condominios/${id}`, { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio atualizado.', 'success'); loadCondominios(); });
 }
 async function apagarCondominio(id) {
@@ -496,16 +535,14 @@ async function openFracao() {
     openModal(`Nova fração — ${currentCond.nome}`,
         selectField('edificioId', 'Edifício', eds.map(e => ({ value: e.id, label: e.nome }))) +
         field('numero', 'Nº da fração', 'text', 'required') + field('tipologia', 'Tipologia (ex.: T2)') +
-        field('permilagem', 'Permilagem (‰, 0–1000)', 'number', 'step="0.0001" min="0" max="1000" required') +
-        field('areaM2', 'Área (m²)', 'number', 'step="0.01" min="0"'),
+        field('permilagem', 'Permilagem (‰, 0–1000)', 'number', 'step="0.0001" min="0" max="1000" required') + field('areaM2', 'Área (m²)', 'number', 'step="0.01" min="0"'),
         async () => { const d = formData(); await apiPost('/api/v1/fracoes', { condominioId: currentCond.id, edificioId: Number(d.edificioId), numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração criada.', 'success'); loadFracoes(); });
 }
 function editFracao(id) {
     const f = cache.frac.find(x => x.id === id);
     openModal('Editar fração',
         field('numero', 'Nº', 'text', 'required', esc(f.numero)) + field('tipologia', 'Tipologia', 'text', '', esc(f.tipologia || '')) +
-        field('permilagem', 'Permilagem (‰)', 'number', 'step="0.0001" min="0" max="1000" required', f.permilagem) +
-        field('areaM2', 'Área (m²)', 'number', 'step="0.01" min="0"', f.areaM2 || ''),
+        field('permilagem', 'Permilagem (‰)', 'number', 'step="0.0001" min="0" max="1000" required', f.permilagem) + field('areaM2', 'Área (m²)', 'number', 'step="0.01" min="0"', f.areaM2 || ''),
         async () => { const d = formData(); await apiPut(`/api/v1/fracoes/${id}`, { numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração atualizada.', 'success'); loadFracoes(); });
 }
 async function apagarFracao(id) {
@@ -523,8 +560,7 @@ function openPagar(quotaId) {
     openModal('Registar pagamento',
         field('valor', 'Valor (€)', 'number', 'step="0.01" min="0.01" required', q.valor) +
         selectField('metodo', 'Método', ['TRANSFERENCIA','MBWAY','MULTIBANCO','PAYPAL','DINHEIRO'].map(m => ({ value: m, label: m }))),
-        async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); loadQuotas(); },
-        `Quota #${quotaId} — ${q.mes}/${q.ano}`);
+        async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); loadQuotas(); }, `Quota #${quotaId} — ${q.mes}/${q.ano}`);
 }
 function openAlterarPassword() {
     openModal('Alterar a minha password',
@@ -547,7 +583,7 @@ function openRecuperar() {
                 showAlert('Se a conta existir, foi enviado um email com o token (ou registado no log, se o SMTP estiver desligado).', 'info');
             } else throw new Error('Indica o email (para pedir) ou token + nova password (para redefinir).');
         },
-        'O envio do token por <strong>email</strong> exige SMTP ativo (<code>MAIL_ENABLED=true</code>). Sem SMTP, o token é apenas registado no log.');
+        'O envio do token por <strong>email</strong> exige SMTP ativo (<code>MAIL_ENABLED=true</code>). Sem SMTP, o token é registado no log.');
 }
 
 document.getElementById('modalForm').addEventListener('submit', async (e) => {
@@ -577,7 +613,8 @@ document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click',
     const tab = b.dataset.tab;
     activateTab(tab);
     if (tab === 'utilizadores') { loadUtilizadores(); return; }
-    if (isAdmin()) { showAlert('Conta de admin: gere utilizadores no separador Utilizadores.', 'info'); return; }
+    if (tab === 'permissoes') { loadPermPerfis(); return; }
+    if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores e Permissões.', 'info'); return; }
     if (tab === 'dashboard') loadDashboard();
     if (tab === 'condominios') loadCondominios();
     if (tab === 'votacoes') loadVotacoes();
