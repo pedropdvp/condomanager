@@ -48,6 +48,10 @@ app:
     # Quando false (default), os emails são apenas registados no log (dev sem SMTP).
     enabled: ${MAIL_ENABLED:false}
     from: ${MAIL_FROM:nao-responder@condomanager.local}
+    resend:
+      # Se definido, o envio usa a API HTTP da Resend (porta 443) em vez de SMTP —
+      # necessário em PaaS que bloqueiam portas SMTP (ex.: Render free).
+      api-key: ${RESEND_API_KEY:}
   recuperacao-password:
     # Validade do token de recuperação de password, em minutos.
     expiracao-minutos: ${RESET_TOKEN_EXP_MIN:60}
