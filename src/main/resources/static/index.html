@@ -540,7 +540,7 @@ async function loadEdificios() {
 async function loadQuotas() {
     cache.quotas = rows(await apiGet(`/api/v1/quotas?condominioId=${currentCond.id}&size=50`));
     subView('Quotas', btn('btn-warning','➕ Gerar quotas','openGerarQuotas()') + (podeGerirOcorrencias() ? btn('btn-outline-info','✉️ Lembretes de atraso','enviarLembretesQuotas()') : ''),
-        table(cache.quotas, q => (['PENDENTE','ATRASADO'].includes(q.estado) && can('PAGAMENTOS','CRIAR') ? btn('btn-success','Pagar',`openPagar(${q.id})`) : '—')));
+        table(cache.quotas, q => (['PENDENTE','ATRASADO'].includes(q.estado) && can('PAGAMENTOS','CRIAR') ? btn('btn-success','Pagar',`openPagar(${q.id})`) + btn('btn-outline-success','Pagar online',`pagarOnline(${q.id})`) : '—')));
 }
 async function enviarLembretesQuotas() {
     if (!confirm('Enviar email de lembrete aos condóminos com quotas em ATRASO?')) return;
@@ -879,6 +879,20 @@ async function apagarReuniao(id) { if (!confirm('Apagar esta reunião?')) return
 
 function openGerarQuotas() { const now = new Date(); openModal(`Gerar quotas — ${currentCond.nome}`, field('mes','Mês (1–12)','number','min="1" max="12" required',now.getMonth() + 1) + field('ano','Ano','number','min="2000" max="2100" required',now.getFullYear()), async () => { const d = formData(); const r = await apiPost('/api/v1/quotas/gerar', { condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano) }); showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success'); recarregar(loadQuotas); }); }
 function openPagar(quotaId) { const q = cache.quotas.find(x => x.id === quotaId); openModal('Registar pagamento', field('valor','Valor (€)','number','step="0.01" min="0.01" required',q.valor) + selectField('metodo','Método',opts(['TRANSFERENCIA','MBWAY','MULTIBANCO','PAYPAL','DINHEIRO'])), async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); recarregar(loadQuotas); }, `Quota #${quotaId} — ${q.mes}/${q.ano}`); }
+async function pagarOnline(quotaId) {
+    try {
+        const r = await apiPost(`/api/v1/pagamentos/online/iniciar?quotaId=${quotaId}`);
+        openModal('Pagar online — Multibanco',
+            `<table class="table table-sm w-auto mb-2">
+               <tr><th>Entidade</th><td><code>${r.entidade}</code></td></tr>
+               <tr><th>Referência</th><td><code>${r.referencia}</code></td></tr>
+               <tr><th>Valor</th><td>${Number(r.valor).toFixed(2)} €</td></tr></table>
+             <p class="small text-secondary mb-2">${r.instrucoes}</p>
+             <div class="alert alert-warning small mb-0">${r.nota}</div>`,
+            async () => { await apiPost(`/api/v1/pagamentos/online/confirmar?quotaId=${quotaId}`); showAlert('Pagamento confirmado.', 'success'); recarregar(loadQuotas); },
+            'Carregue em «Guardar» para simular a confirmação do pagamento (callback do gateway).');
+    } catch (e) { showAlert(e.message, 'danger'); }
+}
 function openAlterarPassword() {
     openModal('A minha conta',
         field('novaPassword', 'Nova password (6–72 caracteres)', 'password', 'minlength="6" required')
