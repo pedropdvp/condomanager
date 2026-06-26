@@ -538,8 +538,20 @@ async function loadEdificios() {
 }
 async function loadQuotas() {
     cache.quotas = rows(await apiGet(`/api/v1/quotas?condominioId=${currentCond.id}&size=50`));
-    subView('Quotas', btn('btn-warning','➕ Gerar quotas','openGerarQuotas()'),
+    subView('Quotas', btn('btn-warning','➕ Gerar quotas','openGerarQuotas()') + (podeGerirOcorrencias() ? btn('btn-outline-info','✉️ Lembretes de atraso','enviarLembretesQuotas()') : ''),
         table(cache.quotas, q => (['PENDENTE','ATRASADO'].includes(q.estado) && can('PAGAMENTOS','CRIAR') ? btn('btn-success','Pagar',`openPagar(${q.id})`) : '—')));
+}
+async function enviarLembretesQuotas() {
+    if (!confirm('Enviar email de lembrete aos condóminos com quotas em ATRASO?')) return;
+    try {
+        const r = await apiPost(`/api/v1/notificacoes/lembretes-quotas?condominioId=${currentCond.id}`);
+        if (r.enviados) {
+            const lista = (r.condominos || []).map(n => `<li>${n}</li>`).join('');
+            openModal(`Lembretes enviados — ${r.enviados}`, `<p class="small mb-1">Email enviado a:</p><ul class="mb-0">${lista}</ul>`, async () => {}, '', true);
+        } else {
+            showAlert('Nenhuma quota em atraso — nenhum lembrete enviado.', 'info');
+        }
+    } catch (e) { showAlert(e.message, 'danger'); }
 }
 async function loadDespesas() {
     cache.desp = rows(await apiGet(`/api/v1/despesas?condominioId=${currentCond.id}&size=50`));

@@ -50,6 +50,16 @@
             <version>2.6.0</version>
         </dependency>
 
+        <!-- Observabilidade: Actuator (health/info/metrics) + Prometheus -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- Relatórios: JasperReports (TECH_STACK.md) -->
         <dependency>
             <groupId>net.sf.jasperreports</groupId>

@@ -66,6 +66,28 @@ security:
     secret: ${JWT_SECRET:dev-secret-troque-isto-em-producao-32+caracteres-1234567890}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000} # 1 hora
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: condomanager
+
+info:
+  app:
+    name: CondoManager
+    description: Gestão de condomínios (multi-tenant, RBAC, Lei 8/2022)
+
 logging:
   level:
     org.hibernate.SQL: info
