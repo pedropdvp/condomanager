@@ -133,6 +133,16 @@ public class UtilizadorService {
         logger.info("Utilizador desativado: id={}", id);
     }
 
+    /** Anonimiza os dados pessoais do utilizador e desativa a conta (direito ao apagamento, RGPD). */
+    @Transactional
+    public void anonimizar(Long id) {
+        Utilizador utilizador = obterAcessivel(id);
+        utilizador.setNome("(conta removida)");
+        utilizador.setEmail("anon-" + id + "@removido.local");
+        utilizador.setAtivo(false);
+        logger.info("Conta anonimizada (RGPD): utilizador id={}", id);
+    }
+
     /** Carrega o utilizador validando o acesso do utilizador atual (isolamento por empresa). */
     private Utilizador obterAcessivel(Long id) {
         Utilizador utilizador = repository.findById(id)

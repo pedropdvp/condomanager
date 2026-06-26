@@ -88,7 +88,7 @@
         <a class="navbar-brand mb-0 h1" href="#">🏢 CondoManager</a>
         <div class="d-flex align-items-center gap-2">
             <span id="userBadge" class="navbar-text text-light small d-none"></span>
-            <button id="pwdBtn" class="btn btn-outline-light btn-sm d-none" type="button" onclick="openAlterarPassword()">Alterar password</button>
+            <button id="pwdBtn" class="btn btn-outline-light btn-sm d-none" type="button" onclick="openAlterarPassword()">A minha conta</button>
             <button type="button" class="btn btn-outline-light btn-sm" onclick="irParaInicio()">Página inicial</button>
             <button id="themeToggle" class="btn btn-outline-light btn-sm" type="button">🌓</button>
             <button id="logoutBtn" class="btn btn-light btn-sm d-none" type="button">Sair</button>
@@ -879,7 +879,26 @@ async function apagarReuniao(id) { if (!confirm('Apagar esta reunião?')) return
 
 function openGerarQuotas() { const now = new Date(); openModal(`Gerar quotas — ${currentCond.nome}`, field('mes','Mês (1–12)','number','min="1" max="12" required',now.getMonth() + 1) + field('ano','Ano','number','min="2000" max="2100" required',now.getFullYear()), async () => { const d = formData(); const r = await apiPost('/api/v1/quotas/gerar', { condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano) }); showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success'); recarregar(loadQuotas); }); }
 function openPagar(quotaId) { const q = cache.quotas.find(x => x.id === quotaId); openModal('Registar pagamento', field('valor','Valor (€)','number','step="0.01" min="0.01" required',q.valor) + selectField('metodo','Método',opts(['TRANSFERENCIA','MBWAY','MULTIBANCO','PAYPAL','DINHEIRO'])), async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); recarregar(loadQuotas); }, `Quota #${quotaId} — ${q.mes}/${q.ano}`); }
-function openAlterarPassword() { openModal('Alterar a minha password', field('novaPassword','Nova password (6–72 caracteres)','password','minlength="6" required'), async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${user().id}/password`, { novaPassword: d.novaPassword }); showAlert('Password alterada.', 'success'); }); }
+function openAlterarPassword() {
+    openModal('A minha conta',
+        field('novaPassword', 'Nova password (6–72 caracteres)', 'password', 'minlength="6" required')
+        + '<hr><p class="small mb-2"><strong>RGPD</strong> — os seus dados pessoais:</p>'
+        + '<div class="d-flex gap-2 flex-wrap"><button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportarMeusDados()">⬇ Exportar os meus dados</button>'
+        + '<button type="button" class="btn btn-sm btn-outline-danger" onclick="apagarMinhaConta()">Apagar a minha conta</button></div>',
+        async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${user().id}/password`, { novaPassword: d.novaPassword }); showAlert('Password alterada.', 'success'); });
+}
+async function exportarMeusDados() {
+    try {
+        const d = await apiGet('/api/v1/rgpd/meus-dados');
+        anchorDownload(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }), 'os-meus-dados.json');
+        showAlert('Dados pessoais exportados.', 'success');
+    } catch (e) { showAlert(e.message, 'danger'); }
+}
+async function apagarMinhaConta() {
+    if (!confirm('Apagar/anonimizar a sua conta? Os seus dados pessoais serão removidos e a sessão terminada. Ação irreversível.')) return;
+    try { await apiDel('/api/v1/rgpd/minha-conta'); try { modal().hide(); } catch (e) {} showAlert('Conta apagada. Sessão terminada.', 'success'); logout(); }
+    catch (e) { showAlert(e.message, 'danger'); }
+}
 function openRecuperar() {
     openModal('Recuperar password', field('email','Email da conta','email','required') + '<hr><p class="small text-secondary mb-2">Já tens um token? Redefine aqui:</p>' + field('token','Token de recuperação') + field('novaPassword','Nova password','password','minlength="6"'),
         async () => { const d = formData();
