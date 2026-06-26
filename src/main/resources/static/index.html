@@ -105,6 +105,7 @@
             <li class="nav-item"><button class="nav-link active" data-tab="dashboard">📊 Dashboard</button></li>
             <li class="nav-item"><button class="nav-link" data-tab="condominios">🏢 Condomínios</button></li>
             <li class="nav-item"><button class="nav-link" data-tab="votacoes">🗳️ Votações</button></li>
+            <li class="nav-item d-none" id="navMensagens"><button class="nav-link" data-tab="mensagens">✉️ Mensagens <span id="msgBadge" class="badge text-bg-danger rounded-pill d-none">0</span></button></li>
             <li class="nav-item d-none" id="navUtilizadores"><button class="nav-link" data-tab="utilizadores">👥 Utilizadores</button></li>
             <li class="nav-item d-none" id="navPermissoes"><button class="nav-link" data-tab="permissoes">🔐 Permissões</button></li>
         </ul>
@@ -164,6 +165,19 @@
             <div id="permMatriz" class="table-responsive"></div>
             <p class="small text-secondary">Cada ✔ é uma permissão <strong>persistida</strong> e <strong>aplicada</strong> em 9 módulos. O <code>ADMIN_SISTEMA</code> tem acesso total.</p>
         </div>
+
+        <div id="tab-mensagens" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h5 mb-0">Mensagens</h2>
+                <div><button id="btnNovaMensagem" class="btn btn-sm btn-success" onclick="openMensagem()">➕ Nova mensagem</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadMensagens()">↻</button></div>
+            </div>
+            <ul class="nav nav-pills mb-3">
+                <li class="nav-item"><button class="nav-link active" id="msgboxRecebidas" onclick="setMsgBox('recebidas')">📥 Recebidas</button></li>
+                <li class="nav-item"><button class="nav-link" id="msgboxEnviadas" onclick="setMsgBox('enviadas')">📤 Enviadas</button></li>
+            </ul>
+            <div id="mensagensTable" class="table-responsive"></div>
+        </div>
     </section>
 </main>
 
@@ -208,8 +222,9 @@ const MONEY = ['orcamentoAnual','valor'];
 const charts = {};
 const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modal'));
 let currentCond = null, onSubmitModal = null;
-const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [], docs: [], atas: [] };
+const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [], docs: [], atas: [], ocor: [], msgs: [] };
 let currentReuniaoId = null;
+let msgBox = 'recebidas';
 
 const PERFIS_ALL = [
     { value: 'CONDOMINO', label: 'Condómino' }, { value: 'ADMIN_CONDOMINIO', label: 'Administrador de Condomínio' },
@@ -306,8 +321,8 @@ function logout() {
 }
 function activateTab(name) {
     document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
-    ['dashboard','condominios','votacoes','utilizadores','permissoes'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
-    document.body.dataset.bg = name; // fundo temático por menu
+    ['dashboard','condominios','votacoes','mensagens','utilizadores','permissoes'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
+    document.body.dataset.bg = name === 'mensagens' ? 'utilizadores' : name; // fundo temático por menu
 }
 async function showApp() {
     const u = user();
@@ -317,6 +332,9 @@ async function showApp() {
     document.getElementById('navUtilizadores').classList.toggle('d-none', !canManageUsers());
     document.getElementById('navPermissoes').classList.toggle('d-none', !canManageUsers());
     try { myPerms = await apiGet('/api/v1/permissoes/me') || {}; } catch { myPerms = {}; }
+    const verMsgs = !isAdmin() && can('MENSAGENS', 'CONSULTAR');
+    document.getElementById('navMensagens').classList.toggle('d-none', !verMsgs);
+    if (verMsgs) atualizarBadgeMensagens();
     const ab = document.getElementById('adminBanner');
     if (isAdmin()) {
         ab.classList.remove('d-none');
@@ -392,6 +410,7 @@ function verCondominio(id) {
           <button class="btn btn-outline-primary" onclick="loadDespesas()">Despesas</button>
           <button class="btn btn-outline-primary" onclick="loadReunioes()">Reuniões</button>
           <button class="btn btn-outline-primary" onclick="loadDocumentos()">Documentos</button>
+          <button class="btn btn-outline-primary" onclick="loadOcorrencias()">Ocorrências</button>
           <button class="btn btn-outline-success" onclick="baixar('pdf')">PDF</button>
           <button class="btn btn-outline-success" onclick="baixar('excel')">Excel</button>
         </div>
@@ -616,6 +635,91 @@ function openDocumento() {
         });
 }
 async function apagarDocumento(id) { if (!confirm('Apagar este documento?')) return; try { await apiDel('/api/v1/documentos/' + id); showAlert('Documento apagado.', 'success'); loadDocumentos(); } catch (e) { showAlert(e.message, 'danger'); } }
+
+// ---------- Ocorrências (sub-vista do condomínio) ----------
+const PRIO_BADGE = { BAIXA: 'secondary', MEDIA: 'info', ALTA: 'warning', URGENTE: 'danger' };
+const OCOR_BADGE = { ABERTA: 'primary', EM_ANALISE: 'info', EM_EXECUCAO: 'warning', CONCLUIDA: 'success', CANCELADA: 'secondary' };
+const podeGerirOcorrencias = () => (user().perfis || []).some(p => ['ROLE_GESTOR_EMPRESA', 'ROLE_FUNCIONARIO', 'ROLE_ADMIN_CONDOMINIO'].includes(p));
+function renderOcorrencias() {
+    const linhas = cache.ocor.map(o => ({ id: o.id, 'Título': o.titulo,
+        Prioridade: `<span class="badge text-bg-${PRIO_BADGE[o.prioridade] || 'secondary'}">${o.prioridade}</span>`,
+        Estado: `<span class="badge text-bg-${OCOR_BADGE[o.estado] || 'secondary'}">${String(o.estado).replace('_', ' ')}</span>` }));
+    subView('Ocorrências', btn('btn-success', '➕ Nova ocorrência', 'openOcorrencia()'),
+        table(linhas, o => podeGerirOcorrencias()
+            ? btn('btn-outline-secondary', 'Estado', `estadoOcorrencia(${o.id})`) + btn('btn-outline-info', 'Atribuir', `atribuirOcorrencia(${o.id})`) + btn('btn-outline-secondary', 'Editar', `editOcorrencia(${o.id})`)
+            : '<span class="small text-secondary">—</span>'));
+}
+async function loadOcorrencias() {
+    cache.ocor = rows(await apiGet(`/api/v1/ocorrencias?condominioId=${currentCond.id}&size=50`));
+    renderOcorrencias();
+}
+function openOcorrencia() {
+    openModal('Nova ocorrência', field('titulo', 'Título', 'text', 'required') + field('descricao', 'Descrição') + selectField('prioridade', 'Prioridade', opts(['BAIXA', 'MEDIA', 'ALTA', 'URGENTE']), 'MEDIA'),
+        async () => { const d = formData(); const nova = await apiPost('/api/v1/ocorrencias', { condominioId: currentCond.id, titulo: d.titulo, descricao: d.descricao, prioridade: d.prioridade }); showAlert('Ocorrência registada.', 'success'); cache.ocor = [nova, ...(cache.ocor || [])]; renderOcorrencias(); });
+}
+function editOcorrencia(id) {
+    const o = cache.ocor.find(x => x.id === id);
+    openModal('Editar ocorrência', field('titulo', 'Título', 'text', 'required', esc(o.titulo)) + field('descricao', 'Descrição', 'text', '', esc(o.descricao || '')) + selectField('prioridade', 'Prioridade', opts(['BAIXA', 'MEDIA', 'ALTA', 'URGENTE']), o.prioridade),
+        async () => { const d = formData(); const upd = await apiPut('/api/v1/ocorrencias/' + id, { titulo: d.titulo, descricao: d.descricao, prioridade: d.prioridade }); showAlert('Ocorrência atualizada.', 'success'); cache.ocor = cache.ocor.map(x => x.id === id ? upd : x); renderOcorrencias(); });
+}
+function estadoOcorrencia(id) {
+    const o = cache.ocor.find(x => x.id === id);
+    openModal('Alterar estado', selectField('estado', 'Estado', opts(['ABERTA', 'EM_ANALISE', 'EM_EXECUCAO', 'CONCLUIDA', 'CANCELADA']), o.estado),
+        async () => { const d = formData(); const upd = await apiPut('/api/v1/ocorrencias/' + id + '/estado', { estado: d.estado }); showAlert('Estado atualizado.', 'success'); cache.ocor = cache.ocor.map(x => x.id === id ? upd : x); renderOcorrencias(); });
+}
+async function atribuirOcorrencia(id) {
+    let us = []; try { us = rows(await apiGet('/api/v1/utilizadores?size=100')); } catch (e) {}
+    const options = us.map(u => ({ value: u.id, label: `${u.nome} (${u.email})` }));
+    openModal('Atribuir ocorrência', selectField('utilizadorId', 'Responsável', options.length ? options : [{ value: '', label: '(sem utilizadores)' }]),
+        async () => { const d = formData(); if (!d.utilizadorId) throw new Error('Escolha um responsável.'); const upd = await apiPost('/api/v1/ocorrencias/' + id + '/atribuir', { utilizadorId: Number(d.utilizadorId) }); showAlert('Ocorrência atribuída.', 'success'); cache.ocor = cache.ocor.map(x => x.id === id ? upd : x); renderOcorrencias(); });
+}
+
+// ---------- Mensagens (tab de topo) ----------
+const TIPO_MSG_BADGE = { INDIVIDUAL: 'primary', GRUPO: 'info', BROADCAST: 'warning' };
+function setMsgBox(box) {
+    msgBox = box;
+    document.getElementById('msgboxRecebidas').classList.toggle('active', box === 'recebidas');
+    document.getElementById('msgboxEnviadas').classList.toggle('active', box === 'enviadas');
+    loadMensagens();
+}
+async function loadMensagens() {
+    const recebidas = msgBox !== 'enviadas';
+    cache.msgs = rows(await apiGet((recebidas ? '/api/v1/mensagens/recebidas' : '/api/v1/mensagens/enviadas') + '?size=50'));
+    const linhas = cache.msgs.map(m => ({ id: m.id,
+        Assunto: (recebidas && !m.lida ? '🔵 ' : '') + (m.assunto || ''),
+        Tipo: `<span class="badge text-bg-${TIPO_MSG_BADGE[m.tipo] || 'secondary'}">${m.tipo}</span>`,
+        De: m.origemNome || '—',
+        Data: m.dataEnvio ? String(m.dataEnvio).replace('T', ' ').slice(0, 16) : '—' }));
+    document.getElementById('mensagensTable').innerHTML = table(linhas, l => btn('btn-outline-primary', 'Abrir', `abrirMensagem(${l.id})`));
+}
+async function abrirMensagem(id) {
+    const m = cache.msgs.find(x => x.id === id);
+    const corpo = `<div class="small text-secondary mb-2">De: ${m.origemNome || '—'} · ${m.dataEnvio ? String(m.dataEnvio).replace('T', ' ').slice(0, 16) : ''}</div><div style="white-space:pre-wrap">${m.conteudo || ''}</div>`;
+    openModal(m.assunto || 'Mensagem', corpo, async () => {}, '', true);
+    if (msgBox !== 'enviadas' && !m.lida) {
+        try { await apiPut('/api/v1/mensagens/' + id + '/lida'); m.lida = true; atualizarBadgeMensagens(); loadMensagens(); } catch (e) {}
+    }
+}
+async function openMensagem() {
+    let us = []; try { us = rows(await apiGet('/api/v1/utilizadores?size=100')); } catch (e) {}
+    const destOpts = us.map(u => ({ value: u.id, label: `${u.nome} (${u.email})` }));
+    openModal('Nova mensagem',
+        selectField('tipo', 'Tipo', [{ value: 'INDIVIDUAL', label: 'Individual' }, { value: 'BROADCAST', label: 'Difusão (todos)' }], 'INDIVIDUAL')
+        + '<div id="destWrap">' + selectField('destinoId', 'Destinatário', destOpts.length ? destOpts : [{ value: '', label: '(sem utilizadores)' }]) + '</div>'
+        + field('assunto', 'Assunto', 'text', 'required')
+        + '<div class="mb-2"><label class="form-label small">Conteúdo</label><textarea name="conteudo" class="form-control form-control-sm" rows="4" required></textarea></div>',
+        async () => { const d = formData(); const body = { tipo: d.tipo, assunto: d.assunto, conteudo: d.conteudo };
+            if (d.tipo === 'INDIVIDUAL') { if (!d.destinoId) throw new Error('Escolha um destinatário.'); body.destinoId = Number(d.destinoId); }
+            await apiPost('/api/v1/mensagens', body); showAlert('Mensagem enviada.', 'success'); setMsgBox('enviadas'); });
+    const sel = document.querySelector('#modalForm [name=tipo]');
+    if (sel) sel.addEventListener('change', e => { document.getElementById('destWrap').style.display = e.target.value === 'INDIVIDUAL' ? '' : 'none'; });
+}
+async function atualizarBadgeMensagens() {
+    try { const r = await apiGet('/api/v1/mensagens/nao-lidas/count'); const n = r.naoLidas || 0;
+        const b = document.getElementById('msgBadge'); b.textContent = n; b.classList.toggle('d-none', n === 0);
+    } catch (e) {}
+}
+
 function openAta() {
     const r = (cache.reun || []).find(x => x.id === currentReuniaoId);
     const dataDefault = r && r.data ? r.data : '';
@@ -639,7 +743,7 @@ async function loadHealth() { const b = document.getElementById('healthBadge'); 
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => { e.preventDefault(); const err = document.getElementById('loginError'); err.classList.add('d-none'); const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.textContent = 'A entrar…'; try { await doLogin(document.getElementById('email').value, document.getElementById('password').value); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); } finally { btn.disabled = false; btn.textContent = 'Entrar'; } });
 document.getElementById('logoutBtn').addEventListener('click', logout);
-document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { const tab = b.dataset.tab; activateTab(tab); if (tab === 'utilizadores') { loadUtilizadores(); return; } if (tab === 'permissoes') { loadPermPerfis(); return; } if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores e Permissões.', 'info'); return; } if (tab === 'dashboard') loadDashboard(); if (tab === 'condominios') loadCondominios(); if (tab === 'votacoes') loadVotacoes(); }));
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { const tab = b.dataset.tab; activateTab(tab); if (tab === 'utilizadores') { loadUtilizadores(); return; } if (tab === 'permissoes') { loadPermPerfis(); return; } if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores e Permissões.', 'info'); return; } if (tab === 'dashboard') loadDashboard(); if (tab === 'condominios') loadCondominios(); if (tab === 'votacoes') loadVotacoes(); if (tab === 'mensagens') loadMensagens(); }));
 const themeSaved = localStorage.getItem('theme'); if (themeSaved) document.documentElement.dataset.bsTheme = themeSaved;
 document.getElementById('themeToggle').addEventListener('click', () => {
     const h = document.documentElement; h.dataset.bsTheme = h.dataset.bsTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', h.dataset.bsTheme);
