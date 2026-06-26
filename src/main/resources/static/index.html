@@ -402,6 +402,11 @@ async function loadDashboard() {
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
+// Reconcilia a vista após uma escrita: recarrega já e volta a recarregar pouco depois,
+// para o caso de a réplica do TiDB ainda não refletir a alteração (read-after-write).
+// Garante que criações/edições/remoções aparecem de forma fiável mesmo em instância fria.
+function recarregar(fn) { try { fn(); } catch (e) {} setTimeout(() => { try { fn(); } catch (e) {} }, 1400); }
+
 // ---------- Condomínios + sub-entidades ----------
 async function loadCondominios() {
     document.getElementById('btnNovoCond').classList.toggle('d-none', !can('CONDOMINIOS','CRIAR'));
@@ -466,9 +471,12 @@ async function loadReunioes() {
     cache.reun = rows(await apiGet(`/api/v1/reunioes?condominioId=${currentCond.id}&size=50`));
     subView('Reuniões', (can('REUNIOES','CRIAR') ? btn('btn-success','➕ Nova reunião','openReuniao()') : ''),
         table(cache.reun, r => (can('ATAS','CONSULTAR') ? btn('btn-outline-dark','Atas',`loadAtasDe(${r.id})`) : '') +
-            (can('REUNIOES','EDITAR') ? btn('btn-outline-secondary','Editar',`editReuniao(${r.id})`) + btn('btn-outline-info','Convocar',`convocarReuniao(${r.id})`) : '') +
+            (can('REUNIOES','EDITAR') ? btn('btn-outline-secondary','Editar',`editReuniao(${r.id})`) + btn('btn-outline-info','Convocar',`convocarReuniao(${r.id})`)
+                + (r.estado === 'AGENDADA' ? btn('btn-outline-success','Realizada',`realizarReuniao(${r.id})`) + btn('btn-outline-warning','Cancelar',`cancelarReuniao(${r.id})`) : '') : '') +
             (can('REUNIOES','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarReuniao(${r.id})`) : '')));
 }
+async function realizarReuniao(id) { if (!confirm('Marcar a reunião como realizada?')) return; try { await apiPost(`/api/v1/reunioes/${id}/realizar`); showAlert('Reunião marcada como realizada.', 'success'); recarregar(loadReunioes); } catch (e) { showAlert(e.message, 'danger'); } }
+async function cancelarReuniao(id) { if (!confirm('Cancelar a reunião? (não elimina o registo)')) return; try { await apiPost(`/api/v1/reunioes/${id}/cancelar`); showAlert('Reunião cancelada.', 'success'); recarregar(loadReunioes); } catch (e) { showAlert(e.message, 'danger'); } }
 async function loadDocumentos() {
     cache.docs = rows(await apiGet(`/api/v1/documentos?condominioId=${currentCond.id}&size=50`));
     subView('Documentos', (can('DOCUMENTOS','CRIAR') ? btn('btn-success','➕ Carregar documento','openDocumento()') : ''),
@@ -529,10 +537,10 @@ async function openVotacao() {
         selectField('reuniaoId', 'Reunião', reunOpts.length ? reunOpts : [{ value: '', label: '(sem reuniões)' }])
         + field('tema', 'Tema', 'text', 'required')
         + selectField('tipoMaioria', 'Maioria exigida', [{ value: 'MAIORIA_SIMPLES', label: 'Maioria simples (>50% presente)' }, { value: 'SEM_OPOSICAO', label: 'Sem oposição' }, { value: 'DOIS_TERCOS', label: 'Dois terços do capital' }, { value: 'UNANIMIDADE', label: 'Unanimidade' }]),
-        async () => { const d = formData(); if (!d.reuniaoId) throw new Error('Escolha uma reunião.'); await apiPost('/api/v1/votacoes', { reuniaoId: Number(d.reuniaoId), tema: d.tema, tipoMaioria: d.tipoMaioria }); showAlert('Votação criada.', 'success'); loadVotacoes(); });
+        async () => { const d = formData(); if (!d.reuniaoId) throw new Error('Escolha uma reunião.'); await apiPost('/api/v1/votacoes', { reuniaoId: Number(d.reuniaoId), tema: d.tema, tipoMaioria: d.tipoMaioria }); showAlert('Votação criada.', 'success'); recarregar(loadVotacoes); });
 }
-async function abrirVotacao(id) { try { await apiPost(`/api/v1/votacoes/${id}/abrir`); showAlert('Votação aberta — pode receber votos.', 'success'); loadVotacoes(); } catch (e) { showAlert(e.message, 'danger'); } }
-async function encerrarVotacao(id) { if (!confirm('Encerrar a votação? Deixa de aceitar votos.')) return; try { await apiPost(`/api/v1/votacoes/${id}/encerrar`); showAlert('Votação encerrada.', 'success'); loadVotacoes(); loadResultado(id); } catch (e) { showAlert(e.message, 'danger'); } }
+async function abrirVotacao(id) { try { await apiPost(`/api/v1/votacoes/${id}/abrir`); showAlert('Votação aberta — pode receber votos.', 'success'); recarregar(loadVotacoes); } catch (e) { showAlert(e.message, 'danger'); } }
+async function encerrarVotacao(id) { if (!confirm('Encerrar a votação? Deixa de aceitar votos.')) return; try { await apiPost(`/api/v1/votacoes/${id}/encerrar`); showAlert('Votação encerrada.', 'success'); recarregar(loadVotacoes); recarregar(() => loadResultado(id)); } catch (e) { showAlert(e.message, 'danger'); } }
 async function condominosDoCondominio(condominioId) {
     const fr = rows(await apiGet(`/api/v1/fracoes?condominioId=${condominioId}&size=100`));
     const listas = await Promise.all(fr.map(f => apiGet(`/api/v1/condominos?fracaoId=${f.id}&size=100`).then(rows).then(cs => cs.map(c => ({ ...c, _fr: f.numero }))).catch(() => [])));
@@ -546,7 +554,7 @@ async function votarVotacao(id) {
     openModal('Registar voto — ' + (v.tema || ''),
         selectField('condominoId', 'Condómino', condOpts.length ? condOpts : [{ value: '', label: '(sem condóminos)' }])
         + selectField('resposta', 'Sentido do voto', [{ value: 'SIM', label: 'A favor (SIM)' }, { value: 'NAO', label: 'Contra (NÃO)' }, { value: 'ABSTENCAO', label: 'Abstenção' }]),
-        async () => { const d = formData(); if (!d.condominoId) throw new Error('Escolha um condómino.'); await apiPost(`/api/v1/votacoes/${id}/votos`, { condominoId: Number(d.condominoId), resposta: d.resposta }); showAlert('Voto registado.', 'success'); loadResultado(id); },
+        async () => { const d = formData(); if (!d.condominoId) throw new Error('Escolha um condómino.'); await apiPost(`/api/v1/votacoes/${id}/votos`, { condominoId: Number(d.condominoId), resposta: d.resposta }); showAlert('Voto registado.', 'success'); recarregar(() => loadResultado(id)); },
         'O voto conta por <strong>permilagem</strong> da fração (Lei 8/2022). Cada condómino vota uma vez.');
 }
 async function loadResultado(id) {
@@ -580,13 +588,13 @@ function blocoMatriz() { return '<label class="form-label small mt-2">Permissõe
 function openNovoAcesso() {
     const perfis = perfisDisponiveis(); const def = perfis[0].value;
     openModal('Criar novo acesso', field('nome','Nome','text','required') + field('email','Email','email','required') + field('password','Password (mín. 6)','password','minlength="6" required') + selectField('perfil','Perfil',perfis.map(p=>({value:p.value,label:p.label})),def) + blocoMatriz(),
-        async () => { const d = formData(); await apiPost('/api/v1/utilizadores', { nome: d.nome, email: d.email, password: d.password, perfis: [d.perfil] }); showAlert('Acesso criado.', 'success'); loadUtilizadores(); }, '', true);
+        async () => { const d = formData(); await apiPost('/api/v1/utilizadores', { nome: d.nome, email: d.email, password: d.password, perfis: [d.perfil] }); showAlert('Acesso criado.', 'success'); recarregar(loadUtilizadores); }, '', true);
     wirePerfilMatriz(); fillMatrizUser(def);
 }
 function editUtilizador(id) {
     const u = cache.users.find(x => x.id === id); const perfis = perfisDisponiveis(); const cur = (u.perfis && u.perfis[0]) || 'CONDOMINO';
     openModal('Editar utilizador', field('nome','Nome','text','required',esc(u.nome)) + `<div class="mb-2"><label class="form-label small">Email (imutável)</label><input class="form-control form-control-sm" value="${esc(u.email)}" disabled></div>` + selectField('ativo','Estado',[{value:'true',label:'Ativo'},{value:'false',label:'Inativo'}],String(u.ativo)) + selectField('perfil','Perfil',perfis.map(p=>({value:p.value,label:p.label})),cur) + blocoMatriz(),
-        async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${id}`, { nome: d.nome, ativo: d.ativo === 'true', perfis: [d.perfil] }); showAlert('Utilizador atualizado.', 'success'); loadUtilizadores(); }, '', true);
+        async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${id}`, { nome: d.nome, ativo: d.ativo === 'true', perfis: [d.perfil] }); showAlert('Utilizador atualizado.', 'success'); recarregar(loadUtilizadores); }, '', true);
     wirePerfilMatriz(); fillMatrizUser(cur);
 }
 async function toggleAtivoUtilizador(id, ativar) {
@@ -595,7 +603,7 @@ async function toggleAtivoUtilizador(id, ativar) {
     try {
         if (ativar) await apiPut(`/api/v1/utilizadores/${id}`, { nome: u.nome, ativo: true, perfis: u.perfis });
         else await apiDel(`/api/v1/utilizadores/${id}`);
-        showAlert(ativar ? 'Utilizador ativado.' : 'Utilizador desativado.', 'success'); loadUtilizadores();
+        showAlert(ativar ? 'Utilizador ativado.' : 'Utilizador desativado.', 'success'); recarregar(loadUtilizadores);
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 
@@ -624,35 +632,35 @@ function openModal(title, fieldsHtml, submitFn, info='', large=false) {
 }
 function formData() { const o = {}; new FormData(document.getElementById('modalForm')).forEach((v, k) => o[k] = v); return o; }
 
-function openCondominio() { openModal('Novo condomínio', field('nome','Nome','text','required') + field('morada','Morada') + field('orcamentoAnual','Orçamento anual (€)','number','step="0.01" min="0" required'), async () => { const d = formData(); await apiPost('/api/v1/condominios', { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio criado.', 'success'); loadCondominios(); }); }
-function editCondominio(id) { const c = cache.cond.find(x => x.id === id); openModal('Editar condomínio', field('nome','Nome','text','required',esc(c.nome)) + field('morada','Morada','text','',esc(c.morada || '')) + field('orcamentoAnual','Orçamento anual (€)','number','step="0.01" min="0" required',c.orcamentoAnual), async () => { const d = formData(); await apiPut(`/api/v1/condominios/${id}`, { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio atualizado.', 'success'); loadCondominios(); }); }
-async function apagarCondominio(id) { if (!confirm('Apagar este condomínio?')) return; try { await apiDel(`/api/v1/condominios/${id}`); showAlert('Condomínio apagado.', 'success'); loadCondominios(); } catch (e) { showAlert(e.message, 'danger'); } }
+function openCondominio() { openModal('Novo condomínio', field('nome','Nome','text','required') + field('morada','Morada') + field('orcamentoAnual','Orçamento anual (€)','number','step="0.01" min="0" required'), async () => { const d = formData(); await apiPost('/api/v1/condominios', { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio criado.', 'success'); recarregar(loadCondominios); }); }
+function editCondominio(id) { const c = cache.cond.find(x => x.id === id); openModal('Editar condomínio', field('nome','Nome','text','required',esc(c.nome)) + field('morada','Morada','text','',esc(c.morada || '')) + field('orcamentoAnual','Orçamento anual (€)','number','step="0.01" min="0" required',c.orcamentoAnual), async () => { const d = formData(); await apiPut(`/api/v1/condominios/${id}`, { nome: d.nome, morada: d.morada, orcamentoAnual: Number(d.orcamentoAnual) }); showAlert('Condomínio atualizado.', 'success'); recarregar(loadCondominios); }); }
+async function apagarCondominio(id) { if (!confirm('Apagar este condomínio?')) return; try { await apiDel(`/api/v1/condominios/${id}`); showAlert('Condomínio apagado.', 'success'); recarregar(loadCondominios); } catch (e) { showAlert(e.message, 'danger'); } }
 
-function openEdificio() { openModal(`Novo edifício — ${currentCond.nome}`, field('nome','Nome','text','required') + field('bloco','Bloco') + field('numeroPisos','Nº de pisos','number','min="0"'), async () => { const d = formData(); await apiPost('/api/v1/edificios', { condominioId: currentCond.id, nome: d.nome, bloco: d.bloco, numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null }); showAlert('Edifício criado.', 'success'); loadEdificios(); }); }
-function editEdificio(id) { const e = cache.edif.find(x => x.id === id); openModal('Editar edifício', field('nome','Nome','text','required',esc(e.nome)) + field('bloco','Bloco','text','',esc(e.bloco || '')) + field('numeroPisos','Nº de pisos','number','min="0"',e.numeroPisos ?? ''), async () => { const d = formData(); await apiPut(`/api/v1/edificios/${id}`, { nome: d.nome, bloco: d.bloco, numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null }); showAlert('Edifício atualizado.', 'success'); loadEdificios(); }); }
-async function apagarEdificio(id) { if (!confirm('Apagar este edifício?')) return; try { await apiDel(`/api/v1/edificios/${id}`); showAlert('Edifício apagado.', 'success'); loadEdificios(); } catch (e) { showAlert(e.message, 'danger'); } }
+function openEdificio() { openModal(`Novo edifício — ${currentCond.nome}`, field('nome','Nome','text','required') + field('bloco','Bloco') + field('numeroPisos','Nº de pisos','number','min="0"'), async () => { const d = formData(); await apiPost('/api/v1/edificios', { condominioId: currentCond.id, nome: d.nome, bloco: d.bloco, numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null }); showAlert('Edifício criado.', 'success'); recarregar(loadEdificios); }); }
+function editEdificio(id) { const e = cache.edif.find(x => x.id === id); openModal('Editar edifício', field('nome','Nome','text','required',esc(e.nome)) + field('bloco','Bloco','text','',esc(e.bloco || '')) + field('numeroPisos','Nº de pisos','number','min="0"',e.numeroPisos ?? ''), async () => { const d = formData(); await apiPut(`/api/v1/edificios/${id}`, { nome: d.nome, bloco: d.bloco, numeroPisos: d.numeroPisos ? Number(d.numeroPisos) : null }); showAlert('Edifício atualizado.', 'success'); recarregar(loadEdificios); }); }
+async function apagarEdificio(id) { if (!confirm('Apagar este edifício?')) return; try { await apiDel(`/api/v1/edificios/${id}`); showAlert('Edifício apagado.', 'success'); recarregar(loadEdificios); } catch (e) { showAlert(e.message, 'danger'); } }
 
 async function openFracao() {
     const eds = rows(await apiGet(`/api/v1/edificios?condominioId=${currentCond.id}&size=50`));
     if (!eds.length) { showAlert('Crie primeiro um edifício.', 'warning'); return; }
     openModal(`Nova fração — ${currentCond.nome}`, selectField('edificioId','Edifício',eds.map(e=>({value:e.id,label:e.nome}))) + field('numero','Nº da fração','text','required') + field('tipologia','Tipologia (ex.: T2)') + field('permilagem','Permilagem (‰, 0–1000)','number','step="0.0001" min="0" max="1000" required') + field('areaM2','Área (m²)','number','step="0.01" min="0"'),
-        async () => { const d = formData(); await apiPost('/api/v1/fracoes', { condominioId: currentCond.id, edificioId: Number(d.edificioId), numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração criada.', 'success'); loadFracoes(); });
+        async () => { const d = formData(); await apiPost('/api/v1/fracoes', { condominioId: currentCond.id, edificioId: Number(d.edificioId), numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração criada.', 'success'); recarregar(loadFracoes); });
 }
-function editFracao(id) { const f = cache.frac.find(x => x.id === id); openModal('Editar fração', field('numero','Nº','text','required',esc(f.numero)) + field('tipologia','Tipologia','text','',esc(f.tipologia || '')) + field('permilagem','Permilagem (‰)','number','step="0.0001" min="0" max="1000" required',f.permilagem) + field('areaM2','Área (m²)','number','step="0.01" min="0"',f.areaM2 || ''), async () => { const d = formData(); await apiPut(`/api/v1/fracoes/${id}`, { numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração atualizada.', 'success'); loadFracoes(); }); }
-async function apagarFracao(id) { if (!confirm('Apagar esta fração?')) return; try { await apiDel(`/api/v1/fracoes/${id}`); showAlert('Fração apagada.', 'success'); loadFracoes(); } catch (e) { showAlert(e.message, 'danger'); } }
+function editFracao(id) { const f = cache.frac.find(x => x.id === id); openModal('Editar fração', field('numero','Nº','text','required',esc(f.numero)) + field('tipologia','Tipologia','text','',esc(f.tipologia || '')) + field('permilagem','Permilagem (‰)','number','step="0.0001" min="0" max="1000" required',f.permilagem) + field('areaM2','Área (m²)','number','step="0.01" min="0"',f.areaM2 || ''), async () => { const d = formData(); await apiPut(`/api/v1/fracoes/${id}`, { numero: d.numero, tipologia: d.tipologia, permilagem: Number(d.permilagem), areaM2: d.areaM2 ? Number(d.areaM2) : null }); showAlert('Fração atualizada.', 'success'); recarregar(loadFracoes); }); }
+async function apagarFracao(id) { if (!confirm('Apagar esta fração?')) return; try { await apiDel(`/api/v1/fracoes/${id}`); showAlert('Fração apagada.', 'success'); recarregar(loadFracoes); } catch (e) { showAlert(e.message, 'danger'); } }
 
-function openCondomino(fracaoId) { openModal('Novo condómino', field('nome','Nome','text','required') + field('nif','NIF') + field('email','Email','email') + field('telefone','Telefone') + selectField('tipo','Tipo',opts(['PROPRIETARIO','INQUILINO'])), async () => { const d = formData(); await apiPost('/api/v1/condominos', { fracaoId, nome: d.nome, nif: d.nif, email: d.email, telefone: d.telefone, tipo: d.tipo }); showAlert('Condómino criado.', 'success'); loadCondominosDe(fracaoId, ''); }); }
-function editCondomino(id) { const o = cache.cond_o.find(x => x.id === id); openModal('Editar condómino', field('nome','Nome','text','required',esc(o.nome)) + field('nif','NIF','text','',esc(o.nif || '')) + field('email','Email','email','',esc(o.email || '')) + field('telefone','Telefone','text','',esc(o.telefone || '')) + selectField('tipo','Tipo',opts(['PROPRIETARIO','INQUILINO']),o.tipo), async () => { const d = formData(); await apiPut(`/api/v1/condominos/${id}`, { nome: d.nome, nif: d.nif, email: d.email, telefone: d.telefone, tipo: d.tipo }); showAlert('Condómino atualizado.', 'success'); loadCondominosDe(o.fracaoId, ''); }); }
-async function apagarCondomino(id, fracaoId, numero) { if (!confirm('Apagar este condómino?')) return; try { await apiDel(`/api/v1/condominos/${id}`); showAlert('Condómino apagado.', 'success'); loadCondominosDe(fracaoId, numero); } catch (e) { showAlert(e.message, 'danger'); } }
+function openCondomino(fracaoId) { openModal('Novo condómino', field('nome','Nome','text','required') + field('nif','NIF') + field('email','Email','email') + field('telefone','Telefone') + selectField('tipo','Tipo',opts(['PROPRIETARIO','INQUILINO'])), async () => { const d = formData(); await apiPost('/api/v1/condominos', { fracaoId, nome: d.nome, nif: d.nif, email: d.email, telefone: d.telefone, tipo: d.tipo }); showAlert('Condómino criado.', 'success'); recarregar(() => loadCondominosDe(fracaoId, '')); }); }
+function editCondomino(id) { const o = cache.cond_o.find(x => x.id === id); openModal('Editar condómino', field('nome','Nome','text','required',esc(o.nome)) + field('nif','NIF','text','',esc(o.nif || '')) + field('email','Email','email','',esc(o.email || '')) + field('telefone','Telefone','text','',esc(o.telefone || '')) + selectField('tipo','Tipo',opts(['PROPRIETARIO','INQUILINO']),o.tipo), async () => { const d = formData(); await apiPut(`/api/v1/condominos/${id}`, { nome: d.nome, nif: d.nif, email: d.email, telefone: d.telefone, tipo: d.tipo }); showAlert('Condómino atualizado.', 'success'); recarregar(() => loadCondominosDe(o.fracaoId, '')); }); }
+async function apagarCondomino(id, fracaoId, numero) { if (!confirm('Apagar este condómino?')) return; try { await apiDel(`/api/v1/condominos/${id}`); showAlert('Condómino apagado.', 'success'); recarregar(() => loadCondominosDe(fracaoId, numero)); } catch (e) { showAlert(e.message, 'danger'); } }
 
-function openDespesa() { openModal(`Nova despesa — ${currentCond.nome}`, field('descricao','Descrição','text','required') + selectField('categoria','Categoria',opts(['MANUTENCAO','LIMPEZA','SEGURO','AGUA','ELETRICIDADE','OUTROS'])) + field('valor','Valor (€)','number','step="0.01" min="0.01" required') + field('dataDespesa','Data','date','required'), async () => { const d = formData(); await apiPost('/api/v1/despesas', { condominioId: currentCond.id, descricao: d.descricao, categoria: d.categoria, valor: Number(d.valor), dataDespesa: d.dataDespesa }); showAlert('Despesa criada.', 'success'); loadDespesas(); }); }
-function editDespesa(id) { const x = cache.desp.find(d => d.id === id); openModal('Editar despesa', field('descricao','Descrição','text','required',esc(x.descricao)) + selectField('categoria','Categoria',opts(['MANUTENCAO','LIMPEZA','SEGURO','AGUA','ELETRICIDADE','OUTROS']),x.categoria) + field('valor','Valor (€)','number','step="0.01" min="0.01" required',x.valor) + field('dataDespesa','Data','date','required',x.dataDespesa), async () => { const d = formData(); await apiPut(`/api/v1/despesas/${id}`, { descricao: d.descricao, categoria: d.categoria, valor: Number(d.valor), dataDespesa: d.dataDespesa }); showAlert('Despesa atualizada.', 'success'); loadDespesas(); }); }
-async function aprovarDespesa(id) { try { await apiPost(`/api/v1/despesas/${id}/aprovar`); showAlert('Despesa aprovada.', 'success'); loadDespesas(); } catch (e) { showAlert(e.message, 'danger'); } }
-async function rejeitarDespesa(id) { try { await apiPost(`/api/v1/despesas/${id}/rejeitar`); showAlert('Despesa rejeitada.', 'success'); loadDespesas(); } catch (e) { showAlert(e.message, 'danger'); } }
-async function apagarDespesa(id) { if (!confirm('Apagar esta despesa?')) return; try { await apiDel(`/api/v1/despesas/${id}`); showAlert('Despesa apagada.', 'success'); loadDespesas(); } catch (e) { showAlert(e.message, 'danger'); } }
+function openDespesa() { openModal(`Nova despesa — ${currentCond.nome}`, field('descricao','Descrição','text','required') + selectField('categoria','Categoria',opts(['MANUTENCAO','LIMPEZA','SEGURO','AGUA','ELETRICIDADE','OUTROS'])) + field('valor','Valor (€)','number','step="0.01" min="0.01" required') + field('dataDespesa','Data','date','required'), async () => { const d = formData(); await apiPost('/api/v1/despesas', { condominioId: currentCond.id, descricao: d.descricao, categoria: d.categoria, valor: Number(d.valor), dataDespesa: d.dataDespesa }); showAlert('Despesa criada.', 'success'); recarregar(loadDespesas); }); }
+function editDespesa(id) { const x = cache.desp.find(d => d.id === id); openModal('Editar despesa', field('descricao','Descrição','text','required',esc(x.descricao)) + selectField('categoria','Categoria',opts(['MANUTENCAO','LIMPEZA','SEGURO','AGUA','ELETRICIDADE','OUTROS']),x.categoria) + field('valor','Valor (€)','number','step="0.01" min="0.01" required',x.valor) + field('dataDespesa','Data','date','required',x.dataDespesa), async () => { const d = formData(); await apiPut(`/api/v1/despesas/${id}`, { descricao: d.descricao, categoria: d.categoria, valor: Number(d.valor), dataDespesa: d.dataDespesa }); showAlert('Despesa atualizada.', 'success'); recarregar(loadDespesas); }); }
+async function aprovarDespesa(id) { try { await apiPost(`/api/v1/despesas/${id}/aprovar`); showAlert('Despesa aprovada.', 'success'); recarregar(loadDespesas); } catch (e) { showAlert(e.message, 'danger'); } }
+async function rejeitarDespesa(id) { try { await apiPost(`/api/v1/despesas/${id}/rejeitar`); showAlert('Despesa rejeitada.', 'success'); recarregar(loadDespesas); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarDespesa(id) { if (!confirm('Apagar esta despesa?')) return; try { await apiDel(`/api/v1/despesas/${id}`); showAlert('Despesa apagada.', 'success'); recarregar(loadDespesas); } catch (e) { showAlert(e.message, 'danger'); } }
 
-function openReuniao() { openModal(`Nova reunião — ${currentCond.nome}`, field('data','Data','date','required') + field('hora','Hora','time') + field('local','Local') + field('ordemTrabalhos','Ordem de trabalhos'), async () => { const d = formData(); await apiPost('/api/v1/reunioes', { condominioId: currentCond.id, data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião agendada.', 'success'); loadReunioes(); }); }
-function editReuniao(id) { const r = cache.reun.find(x => x.id === id); openModal('Editar reunião', field('data','Data','date','required',r.data) + field('hora','Hora','time','',r.hora || '') + field('local','Local','text','',esc(r.local || '')) + field('ordemTrabalhos','Ordem de trabalhos','text','',esc(r.ordemTrabalhos || '')), async () => { const d = formData(); await apiPut(`/api/v1/reunioes/${id}`, { data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião atualizada.', 'success'); loadReunioes(); }); }
+function openReuniao() { openModal(`Nova reunião — ${currentCond.nome}`, field('data','Data','date','required') + field('hora','Hora','time') + field('local','Local') + field('ordemTrabalhos','Ordem de trabalhos'), async () => { const d = formData(); await apiPost('/api/v1/reunioes', { condominioId: currentCond.id, data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião agendada.', 'success'); recarregar(loadReunioes); }); }
+function editReuniao(id) { const r = cache.reun.find(x => x.id === id); openModal('Editar reunião', field('data','Data','date','required',r.data) + field('hora','Hora','time','',r.hora || '') + field('local','Local','text','',esc(r.local || '')) + field('ordemTrabalhos','Ordem de trabalhos','text','',esc(r.ordemTrabalhos || '')), async () => { const d = formData(); await apiPut(`/api/v1/reunioes/${id}`, { data: d.data, hora: d.hora || null, local: d.local, ordemTrabalhos: d.ordemTrabalhos }); showAlert('Reunião atualizada.', 'success'); recarregar(loadReunioes); }); }
 async function convocarReuniao(id) {
     if (!confirm('Enviar convocatória por email aos condóminos do condomínio?')) return;
     try {
@@ -665,10 +673,10 @@ async function convocarReuniao(id) {
         openModal(`Convocatória enviada — ${r.emailsEnviados} email${r.emailsEnviados === 1 ? '' : 's'}`, aviso + tabela, async () => {}, '', true);
     } catch (e) { showAlert(e.message, 'danger'); }
 }
-async function apagarReuniao(id) { if (!confirm('Apagar esta reunião?')) return; try { await apiDel(`/api/v1/reunioes/${id}`); showAlert('Reunião apagada.', 'success'); loadReunioes(); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarReuniao(id) { if (!confirm('Apagar esta reunião?')) return; try { await apiDel(`/api/v1/reunioes/${id}`); showAlert('Reunião apagada.', 'success'); recarregar(loadReunioes); } catch (e) { showAlert(e.message, 'danger'); } }
 
-function openGerarQuotas() { const now = new Date(); openModal(`Gerar quotas — ${currentCond.nome}`, field('mes','Mês (1–12)','number','min="1" max="12" required',now.getMonth() + 1) + field('ano','Ano','number','min="2000" max="2100" required',now.getFullYear()), async () => { const d = formData(); const r = await apiPost('/api/v1/quotas/gerar', { condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano) }); showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success'); loadQuotas(); }); }
-function openPagar(quotaId) { const q = cache.quotas.find(x => x.id === quotaId); openModal('Registar pagamento', field('valor','Valor (€)','number','step="0.01" min="0.01" required',q.valor) + selectField('metodo','Método',opts(['TRANSFERENCIA','MBWAY','MULTIBANCO','PAYPAL','DINHEIRO'])), async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); loadQuotas(); }, `Quota #${quotaId} — ${q.mes}/${q.ano}`); }
+function openGerarQuotas() { const now = new Date(); openModal(`Gerar quotas — ${currentCond.nome}`, field('mes','Mês (1–12)','number','min="1" max="12" required',now.getMonth() + 1) + field('ano','Ano','number','min="2000" max="2100" required',now.getFullYear()), async () => { const d = formData(); const r = await apiPost('/api/v1/quotas/gerar', { condominioId: currentCond.id, mes: Number(d.mes), ano: Number(d.ano) }); showAlert(`Quotas geradas: ${r.quotasGeradas} (total ${Number(r.valorTotal).toFixed(2)} €).`, 'success'); recarregar(loadQuotas); }); }
+function openPagar(quotaId) { const q = cache.quotas.find(x => x.id === quotaId); openModal('Registar pagamento', field('valor','Valor (€)','number','step="0.01" min="0.01" required',q.valor) + selectField('metodo','Método',opts(['TRANSFERENCIA','MBWAY','MULTIBANCO','PAYPAL','DINHEIRO'])), async () => { const d = formData(); await apiPost('/api/v1/pagamentos', { quotaId, valor: Number(d.valor), metodo: d.metodo }); showAlert('Pagamento registado.', 'success'); recarregar(loadQuotas); }, `Quota #${quotaId} — ${q.mes}/${q.ano}`); }
 function openAlterarPassword() { openModal('Alterar a minha password', field('novaPassword','Nova password (6–72 caracteres)','password','minlength="6" required'), async () => { const d = formData(); await apiPut(`/api/v1/utilizadores/${user().id}/password`, { novaPassword: d.novaPassword }); showAlert('Password alterada.', 'success'); }); }
 function openRecuperar() {
     openModal('Recuperar password', field('email','Email da conta','email','required') + '<hr><p class="small text-secondary mb-2">Já tens um token? Redefine aqui:</p>' + field('token','Token de recuperação') + field('novaPassword','Nova password','password','minlength="6"'),
@@ -686,10 +694,10 @@ function openDocumento() {
             if (!f.ficheiro.files.length) throw new Error('Escolha um ficheiro.');
             const fd = new FormData();
             fd.append('condominioId', currentCond.id); fd.append('nome', f.nome.value); fd.append('tipo', f.tipo.value || ''); fd.append('ficheiro', f.ficheiro.files[0]);
-            await apiUpload('/api/v1/documentos', fd); showAlert('Documento carregado.', 'success'); loadDocumentos();
+            await apiUpload('/api/v1/documentos', fd); showAlert('Documento carregado.', 'success'); recarregar(loadDocumentos);
         });
 }
-async function apagarDocumento(id) { if (!confirm('Apagar este documento?')) return; try { await apiDel('/api/v1/documentos/' + id); showAlert('Documento apagado.', 'success'); loadDocumentos(); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarDocumento(id) { if (!confirm('Apagar este documento?')) return; try { await apiDel('/api/v1/documentos/' + id); showAlert('Documento apagado.', 'success'); recarregar(loadDocumentos); } catch (e) { showAlert(e.message, 'danger'); } }
 
 // ---------- Ocorrências (sub-vista do condomínio) ----------
 const PRIO_BADGE = { BAIXA: 'secondary', MEDIA: 'info', ALTA: 'warning', URGENTE: 'danger' };

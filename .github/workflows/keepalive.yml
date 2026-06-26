@@ -1,0 +1,25 @@
+name: Keep-alive (evita cold start do Render free)
+
+# Faz um ping periódico ao endpoint de health para manter a instância gratuita do
+# Render acordada (adormece após ~15 min sem tráfego). Em repositório público as
+# execuções agendadas do GitHub Actions são gratuitas.
+
+on:
+  schedule:
+    - cron: '*/12 * * * *'   # a cada ~12 minutos
+  workflow_dispatch: {}        # permite correr manualmente
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping ao /api/v1/health
+        run: |
+          URL="https://condomanager.onrender.com/api/v1/health"
+          for i in 1 2 3 4; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 75 "$URL" || true)
+            echo "tentativa $i -> HTTP $code"
+            if [ "$code" = "200" ]; then echo "Serviço acordado."; exit 0; fi
+            sleep 25
+          done
+          echo "::warning::O health não respondeu 200 (a instância pode estar a acordar)."
