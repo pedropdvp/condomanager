@@ -682,15 +682,19 @@ function setMsgBox(box) {
     document.getElementById('msgboxEnviadas').classList.toggle('active', box === 'enviadas');
     loadMensagens();
 }
-async function loadMensagens() {
+function renderMensagens() {
     const recebidas = msgBox !== 'enviadas';
-    cache.msgs = rows(await apiGet((recebidas ? '/api/v1/mensagens/recebidas' : '/api/v1/mensagens/enviadas') + '?size=50'));
     const linhas = cache.msgs.map(m => ({ id: m.id,
         Assunto: (recebidas && !m.lida ? '🔵 ' : '') + (m.assunto || ''),
         Tipo: `<span class="badge text-bg-${TIPO_MSG_BADGE[m.tipo] || 'secondary'}">${m.tipo}</span>`,
         De: m.origemNome || '—',
         Data: m.dataEnvio ? String(m.dataEnvio).replace('T', ' ').slice(0, 16) : '—' }));
     document.getElementById('mensagensTable').innerHTML = table(linhas, l => btn('btn-outline-primary', 'Abrir', `abrirMensagem(${l.id})`));
+}
+async function loadMensagens() {
+    const recebidas = msgBox !== 'enviadas';
+    cache.msgs = rows(await apiGet((recebidas ? '/api/v1/mensagens/recebidas' : '/api/v1/mensagens/enviadas') + '?size=50'));
+    renderMensagens();
 }
 async function abrirMensagem(id) {
     const m = cache.msgs.find(x => x.id === id);
@@ -710,7 +714,14 @@ async function openMensagem() {
         + '<div class="mb-2"><label class="form-label small">Conteúdo</label><textarea name="conteudo" class="form-control form-control-sm" rows="4" required></textarea></div>',
         async () => { const d = formData(); const body = { tipo: d.tipo, assunto: d.assunto, conteudo: d.conteudo };
             if (d.tipo === 'INDIVIDUAL') { if (!d.destinoId) throw new Error('Escolha um destinatário.'); body.destinoId = Number(d.destinoId); }
-            await apiPost('/api/v1/mensagens', body); showAlert('Mensagem enviada.', 'success'); setMsgBox('enviadas'); });
+            const nova = await apiPost('/api/v1/mensagens', body); showAlert('Mensagem enviada.', 'success');
+            // Mostrar em "Enviadas" garantindo que a nova mensagem aparece (imune a read-after-write).
+            msgBox = 'enviadas';
+            document.getElementById('msgboxRecebidas').classList.remove('active');
+            document.getElementById('msgboxEnviadas').classList.add('active');
+            let lista = []; try { lista = rows(await apiGet('/api/v1/mensagens/enviadas?size=50')); } catch (e) {}
+            cache.msgs = [nova, ...lista.filter(x => x.id !== nova.id)];
+            renderMensagens(); });
     const sel = document.querySelector('#modalForm [name=tipo]');
     if (sel) sel.addEventListener('change', e => { document.getElementById('destWrap').style.display = e.target.value === 'INDIVIDUAL' ? '' : 'none'; });
 }
