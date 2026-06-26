@@ -209,7 +209,14 @@
                 <div><button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV(cache.audit, 'auditoria')">⬇ CSV</button>
                     <button class="btn btn-sm btn-outline-primary" onclick="loadAuditoria()">↻ Atualizar</button></div>
             </div>
+            <div class="row g-2 mb-2 align-items-center">
+                <div class="col-sm-7 col-md-5"><input id="auditSearch" class="form-control form-control-sm" placeholder="Pesquisar utilizador ou recurso…" oninput="renderAuditoria()"></div>
+                <div class="col-auto"><select id="auditMetodo" class="form-select form-select-sm" onchange="renderAuditoria()">
+                    <option value="">Todos os métodos</option><option>LOGIN</option><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select></div>
+                <div class="col-auto small text-secondary" id="auditResumo"></div>
+            </div>
             <div id="auditoriaTable" class="table-responsive"></div>
+            <div class="text-center mt-2"><button id="auditMais" class="btn btn-sm btn-outline-primary d-none" onclick="loadMaisAuditoria()">Carregar mais</button></div>
         </div>
 
         <div id="tab-empresas" class="d-none">
@@ -642,13 +649,38 @@ async function loadResultado(id) {
 }
 
 // ---------- Auditoria (admin/gestor, só leitura) ----------
-async function loadAuditoria() {
+let auditPage = 0, auditTotalPaginas = 1, auditTotal = 0;
+const MET_BADGE = { LOGIN: 'secondary', GET: 'info', POST: 'success', PUT: 'warning', DELETE: 'danger' };
+function parseOperacao(op) {
+    if (op === 'LOGIN') return { metodo: 'LOGIN', recurso: 'Início de sessão' };
+    const i = String(op).indexOf(' ');
+    return i > 0 ? { metodo: op.slice(0, i), recurso: op.slice(i + 1) } : { metodo: '—', recurso: String(op) };
+}
+async function loadAuditoria() { auditPage = 0; cache.audit = []; await fetchAuditPage(); }
+async function loadMaisAuditoria() { auditPage++; await fetchAuditPage(); }
+async function fetchAuditPage() {
     try {
-        cache.audit = rows(await apiGet('/api/v1/auditoria?size=100&sort=dataHora,desc'));
-        const linhas = cache.audit.map(h => ({ id: h.id, Utilizador: h.utilizador || '—', Operação: h.operacao || '—',
-            'Data/hora': h.dataHora ? String(h.dataHora).replace('T', ' ').slice(0, 19) : '—' }));
-        document.getElementById('auditoriaTable').innerHTML = linhas.length ? table(linhas, null) : '<p class="text-secondary">Sem registos de auditoria.</p>';
+        const p = await apiGet(`/api/v1/auditoria?size=50&page=${auditPage}&sort=dataHora,desc`);
+        auditTotalPaginas = p.totalPaginas || 1; auditTotal = p.totalElementos || 0;
+        cache.audit = cache.audit.concat(p.conteudo || p.content || []);
+        renderAuditoria();
+        document.getElementById('auditMais').classList.toggle('d-none', auditPage >= auditTotalPaginas - 1);
     } catch (e) { showAlert(e.message, 'danger'); }
+}
+function renderAuditoria() {
+    const q = (document.getElementById('auditSearch')?.value || '').toLowerCase();
+    const met = document.getElementById('auditMetodo')?.value || '';
+    const proc = cache.audit.map(h => { const o = parseOperacao(h.operacao); return { ...h, _m: o.metodo, _r: o.recurso }; })
+        .filter(h => (!met || h._m === met) && (!q || (h.utilizador || '').toLowerCase().includes(q) || (h._r || '').toLowerCase().includes(q)));
+    const linhas = proc.map(h => ({
+        'Data/hora': h.dataHora ? String(h.dataHora).replace('T', ' ').slice(0, 19) : '—',
+        Utilizador: h.utilizador || '—',
+        Método: `<span class="badge text-bg-${MET_BADGE[h._m] || 'secondary'}">${h._m}</span>`,
+        Recurso: h._r
+    }));
+    document.getElementById('auditoriaTable').innerHTML = linhas.length ? table(linhas, null) : '<p class="text-secondary">Sem registos para o filtro.</p>';
+    const utilizadores = new Set(cache.audit.map(a => a.utilizador)).size;
+    document.getElementById('auditResumo').textContent = `${proc.length}/${cache.audit.length} mostrados · ${auditTotal} no total · ${utilizadores} utilizadores`;
 }
 // ---------- Empresas (admin) ----------
 async function loadEmpresas() {
