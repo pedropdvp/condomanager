@@ -37,12 +37,47 @@ public class RelatorioController {
     @GetMapping("/quotas/excel")
     @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
     public ResponseEntity<byte[]> quotasExcel(@RequestParam Long condominioId) {
-        byte[] xlsx = service.relatorioQuotasXlsx(condominioId);
+        return xlsx(service.relatorioQuotasXlsx(condominioId), "quotas", condominioId);
+    }
+
+    @GetMapping("/despesas")
+    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    public ResponseEntity<byte[]> despesas(@RequestParam Long condominioId) {
+        return pdf(service.relatorioDespesasPdf(condominioId), "despesas", condominioId);
+    }
+
+    @GetMapping("/despesas/excel")
+    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    public ResponseEntity<byte[]> despesasExcel(@RequestParam Long condominioId) {
+        return xlsx(service.relatorioDespesasXlsx(condominioId), "despesas", condominioId);
+    }
+
+    @GetMapping("/ocorrencias")
+    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    public ResponseEntity<byte[]> ocorrencias(@RequestParam Long condominioId) {
+        return pdf(service.relatorioOcorrenciasPdf(condominioId), "ocorrencias", condominioId);
+    }
+
+    @GetMapping("/ocorrencias/excel")
+    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    public ResponseEntity<byte[]> ocorrenciasExcel(@RequestParam Long condominioId) {
+        return xlsx(service.relatorioOcorrenciasXlsx(condominioId), "ocorrencias", condominioId);
+    }
+
+    private ResponseEntity<byte[]> pdf(byte[] body, String nome, Long condominioId) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"relatorio-quotas-" + condominioId + ".xlsx\"")
+                        "attachment; filename=\"relatorio-" + nome + "-" + condominioId + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(body);
+    }
+
+    private ResponseEntity<byte[]> xlsx(byte[] body, String nome, Long condominioId) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"relatorio-" + nome + "-" + condominioId + ".xlsx\"")
                 .contentType(MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(xlsx);
+                .body(body);
     }
 }

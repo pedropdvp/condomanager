@@ -164,6 +164,7 @@
                 <div><button id="btnNovaVotacao" class="btn btn-sm btn-success d-none" onclick="openVotacao()">➕ Nova votação</button>
                     <button class="btn btn-sm btn-outline-primary" onclick="loadVotacoes()">↻ Atualizar</button></div>
             </div>
+            <input id="votSearch" class="form-control form-control-sm mb-2" placeholder="Pesquisar por tema ou estado…" oninput="renderVotacoes()">
             <div id="votacoesTable" class="table-responsive"></div>
             <div id="resultadoVotacao" class="mt-4"></div>
         </div>
@@ -225,6 +226,7 @@
                 <div><button class="btn btn-sm btn-success" onclick="openEmpresa()">➕ Nova empresa</button>
                     <button class="btn btn-sm btn-outline-primary" onclick="loadEmpresas()">↻</button></div>
             </div>
+            <input id="empSearch" class="form-control form-control-sm mb-2" placeholder="Pesquisar por nome, NIF ou email…" oninput="renderEmpresas()">
             <div id="empresasTable" class="table-responsive"></div>
         </div>
     </section>
@@ -541,7 +543,7 @@ async function loadQuotas() {
 }
 async function loadDespesas() {
     cache.desp = rows(await apiGet(`/api/v1/despesas?condominioId=${currentCond.id}&size=50`));
-    subView('Despesas', btn('btn-success','➕ Nova despesa','openDespesa()'),
+    subView('Despesas', btn('btn-success','➕ Nova despesa','openDespesa()') + btn('btn-outline-success','PDF',"baixarRelatorio('despesas','pdf')") + btn('btn-outline-success','Excel',"baixarRelatorio('despesas','excel')"),
         table(cache.desp, d => (d.estado === 'PENDENTE' ? btn('btn-outline-success','Aprovar',`aprovarDespesa(${d.id})`) + btn('btn-outline-warning','Rejeitar',`rejeitarDespesa(${d.id})`) : '') +
             btn('btn-outline-secondary','Editar',`editDespesa(${d.id})`) + btn('btn-outline-danger','Apagar',`apagarDespesa(${d.id})`)));
 }
@@ -589,24 +591,36 @@ function baixar(fmt) {
     const mime = isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     return downloadComPicker(path, name, mime, 'Relatório guardado.');
 }
+// Relatórios por tipo (despesas, ocorrencias) em PDF/Excel.
+function baixarRelatorio(tipo, fmt) {
+    const isPdf = fmt === 'pdf';
+    const path = `/api/v1/relatorios/${tipo}${isPdf ? '' : '/excel'}?condominioId=${currentCond.id}`;
+    const mime = isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    return downloadComPicker(path, `relatorio-${tipo}-${currentCond.id}.${isPdf ? 'pdf' : 'xlsx'}`, mime, 'Relatório guardado.');
+}
 
 const VOT_BADGE = { CRIADA: 'secondary', ABERTA: 'success', ENCERRADA: 'dark' };
 async function loadVotacoes() {
     try {
         document.getElementById('btnNovaVotacao').classList.toggle('d-none', !can('VOTACOES', 'CRIAR'));
         cache.votacoes = rows(await apiGet('/api/v1/votacoes?size=50'));
-        const podeCriar = can('VOTACOES', 'CRIAR'), podeEditar = can('VOTACOES', 'EDITAR');
-        const linhas = cache.votacoes.map(v => ({ id: v.id, Tema: v.tema, Maioria: String(v.tipoMaioria).replace(/_/g, ' '),
-            Estado: `<span class="badge text-bg-${VOT_BADGE[v.estado] || 'secondary'}">${v.estado}</span>` }));
-        document.getElementById('votacoesTable').innerHTML = table(linhas, l => {
-            const v = cache.votacoes.find(x => x.id === l.id); let b = '';
-            if (v.estado === 'CRIADA' && podeEditar) b += btn('btn-outline-success', 'Abrir', `abrirVotacao(${v.id})`);
-            if (v.estado === 'ABERTA' && podeCriar) b += btn('btn-success', 'Votar', `votarVotacao(${v.id})`);
-            if (v.estado === 'ABERTA' && podeEditar) b += btn('btn-outline-warning', 'Encerrar', `encerrarVotacao(${v.id})`);
-            return b + btn('btn-outline-primary', 'Resultado', `loadResultado(${v.id})`);
-        });
+        renderVotacoes();
         document.getElementById('resultadoVotacao').innerHTML = '';
     } catch (e) { showAlert(e.message, 'danger'); }
+}
+function renderVotacoes() {
+    const q = (document.getElementById('votSearch')?.value || '').toLowerCase();
+    const podeCriar = can('VOTACOES', 'CRIAR'), podeEditar = can('VOTACOES', 'EDITAR');
+    const lista = cache.votacoes.filter(v => !q || (v.tema || '').toLowerCase().includes(q) || (v.estado || '').toLowerCase().includes(q));
+    const linhas = lista.map(v => ({ id: v.id, Tema: v.tema, Maioria: String(v.tipoMaioria).replace(/_/g, ' '),
+        Estado: `<span class="badge text-bg-${VOT_BADGE[v.estado] || 'secondary'}">${v.estado}</span>` }));
+    document.getElementById('votacoesTable').innerHTML = table(linhas, l => {
+        const v = cache.votacoes.find(x => x.id === l.id); let b = '';
+        if (v.estado === 'CRIADA' && podeEditar) b += btn('btn-outline-success', 'Abrir', `abrirVotacao(${v.id})`);
+        if (v.estado === 'ABERTA' && podeCriar) b += btn('btn-success', 'Votar', `votarVotacao(${v.id})`);
+        if (v.estado === 'ABERTA' && podeEditar) b += btn('btn-outline-warning', 'Encerrar', `encerrarVotacao(${v.id})`);
+        return b + btn('btn-outline-primary', 'Resultado', `loadResultado(${v.id})`);
+    });
 }
 async function openVotacao() {
     let reun = []; try { reun = rows(await apiGet('/api/v1/reunioes?size=100')); } catch (e) {}
@@ -686,9 +700,14 @@ function renderAuditoria() {
 async function loadEmpresas() {
     try {
         cache.empresas = rows(await apiGet('/api/v1/empresas?size=50'));
-        const linhas = cache.empresas.map(em => ({ id: em.id, Nome: em.nome, NIF: em.nif || '—', Email: em.email || '—', Telefone: em.telefone || '—', Morada: em.morada || '—' }));
-        document.getElementById('empresasTable').innerHTML = table(linhas, em => btn('btn-outline-secondary', 'Editar', `editEmpresa(${em.id})`) + btn('btn-outline-danger', 'Desativar', `desativarEmpresa(${em.id})`));
+        renderEmpresas();
     } catch (e) { showAlert(e.message, 'danger'); }
+}
+function renderEmpresas() {
+    const q = (document.getElementById('empSearch')?.value || '').toLowerCase();
+    const lista = cache.empresas.filter(em => !q || (em.nome || '').toLowerCase().includes(q) || (em.nif || '').toLowerCase().includes(q) || (em.email || '').toLowerCase().includes(q));
+    const linhas = lista.map(em => ({ id: em.id, Nome: em.nome, NIF: em.nif || '—', Email: em.email || '—', Telefone: em.telefone || '—', Morada: em.morada || '—' }));
+    document.getElementById('empresasTable').innerHTML = table(linhas, em => btn('btn-outline-secondary', 'Editar', `editEmpresa(${em.id})`) + btn('btn-outline-danger', 'Desativar', `desativarEmpresa(${em.id})`));
 }
 function openEmpresa() {
     openModal('Nova empresa', field('nome', 'Nome', 'text', 'required') + field('nif', 'NIF') + field('email', 'Email', 'email') + field('telefone', 'Telefone') + field('morada', 'Morada'),
@@ -856,7 +875,7 @@ function renderOcorrencias() {
     const linhas = cache.ocor.map(o => ({ id: o.id, 'Título': o.titulo,
         Prioridade: `<span class="badge text-bg-${PRIO_BADGE[o.prioridade] || 'secondary'}">${o.prioridade}</span>`,
         Estado: `<span class="badge text-bg-${OCOR_BADGE[o.estado] || 'secondary'}">${String(o.estado).replace('_', ' ')}</span>` }));
-    subView('Ocorrências', btn('btn-success', '➕ Nova ocorrência', 'openOcorrencia()'),
+    subView('Ocorrências', btn('btn-success', '➕ Nova ocorrência', 'openOcorrencia()') + btn('btn-outline-success','PDF',"baixarRelatorio('ocorrencias','pdf')") + btn('btn-outline-success','Excel',"baixarRelatorio('ocorrencias','excel')"),
         table(linhas, o => podeGerirOcorrencias()
             ? btn('btn-outline-secondary', 'Estado', `estadoOcorrencia(${o.id})`) + btn('btn-outline-info', 'Atribuir', `atribuirOcorrencia(${o.id})`) + btn('btn-outline-secondary', 'Editar', `editOcorrencia(${o.id})`)
             : '<span class="small text-secondary">—</span>'));
