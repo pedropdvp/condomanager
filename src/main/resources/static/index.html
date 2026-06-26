@@ -60,9 +60,17 @@
       body[data-bg="votacoes"]::before     { background-image:url('/img/bg-votacoes.jpg'); }
       body[data-bg="utilizadores"]::before { background-image:url('/img/bg-utilizadores.jpg'); }
       body[data-bg="permissoes"]::before   { background-image:url('/img/bg-permissoes.jpg'); }
+
+      /* ---------- Indicador de carregamento (barra indeterminada no topo) ---------- */
+      #cmProgress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 3000; overflow: hidden; opacity: 0; transition: opacity .2s ease; pointer-events: none; }
+      #cmProgress.active { opacity: 1; }
+      #cmProgress::before { content: ''; position: absolute; height: 100%; width: 40%; left: -40%;
+          background: linear-gradient(90deg, transparent, #0d6efd, #20c997, transparent); animation: cmSlide 1.05s ease-in-out infinite; }
+      @keyframes cmSlide { 0% { left: -40%; } 100% { left: 100%; } }
     </style>
 </head>
 <body class="bg-body-tertiary">
+<div id="cmProgress" aria-hidden="true"></div>
 
 <nav class="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
     <div class="container">
@@ -138,7 +146,8 @@
         <div id="tab-votacoes" class="d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h5 mb-0">Votações</h2>
-                <button class="btn btn-sm btn-outline-primary" onclick="loadVotacoes()">↻ Atualizar</button>
+                <div><button id="btnNovaVotacao" class="btn btn-sm btn-success d-none" onclick="openVotacao()">➕ Nova votação</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadVotacoes()">↻ Atualizar</button></div>
             </div>
             <div id="votacoesTable" class="table-responsive"></div>
             <div id="resultadoVotacao" class="mt-4"></div>
@@ -198,6 +207,13 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+// Indicador de carregamento global: barra no topo enquanto houver pedidos HTTP em curso.
+(function () {
+    let pending = 0;
+    const orig = window.fetch.bind(window);
+    const paint = () => { const el = document.getElementById('cmProgress'); if (el) el.classList.toggle('active', pending > 0); };
+    window.fetch = function () { pending++; paint(); return orig.apply(this, arguments).finally(() => { pending = Math.max(0, pending - 1); paint(); }); };
+})();
 const token = () => sessionStorage.getItem('cm_token');
 const user = () => JSON.parse(sessionStorage.getItem('cm_user') || '{}');
 const isAdmin = () => (user().perfis || []).includes('ROLE_ADMIN_SISTEMA');
@@ -222,7 +238,7 @@ const MONEY = ['orcamentoAnual','valor'];
 const charts = {};
 const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modal'));
 let currentCond = null, onSubmitModal = null;
-const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [], docs: [], atas: [], ocor: [], msgs: [] };
+const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [], docs: [], atas: [], ocor: [], msgs: [], votacoes: [] };
 let currentReuniaoId = null;
 let msgBox = 'recebidas';
 
@@ -488,11 +504,50 @@ function baixar(fmt) {
     return downloadComPicker(path, name, mime, 'Relatório guardado.');
 }
 
+const VOT_BADGE = { CRIADA: 'secondary', ABERTA: 'success', ENCERRADA: 'dark' };
 async function loadVotacoes() {
     try {
-        document.getElementById('votacoesTable').innerHTML = table(rows(await apiGet('/api/v1/votacoes?size=50')), v => btn('btn-outline-primary','Resultado',`loadResultado(${v.id})`));
+        document.getElementById('btnNovaVotacao').classList.toggle('d-none', !can('VOTACOES', 'CRIAR'));
+        cache.votacoes = rows(await apiGet('/api/v1/votacoes?size=50'));
+        const podeCriar = can('VOTACOES', 'CRIAR'), podeEditar = can('VOTACOES', 'EDITAR');
+        const linhas = cache.votacoes.map(v => ({ id: v.id, Tema: v.tema, Maioria: String(v.tipoMaioria).replace(/_/g, ' '),
+            Estado: `<span class="badge text-bg-${VOT_BADGE[v.estado] || 'secondary'}">${v.estado}</span>` }));
+        document.getElementById('votacoesTable').innerHTML = table(linhas, l => {
+            const v = cache.votacoes.find(x => x.id === l.id); let b = '';
+            if (v.estado === 'CRIADA' && podeEditar) b += btn('btn-outline-success', 'Abrir', `abrirVotacao(${v.id})`);
+            if (v.estado === 'ABERTA' && podeCriar) b += btn('btn-success', 'Votar', `votarVotacao(${v.id})`);
+            if (v.estado === 'ABERTA' && podeEditar) b += btn('btn-outline-warning', 'Encerrar', `encerrarVotacao(${v.id})`);
+            return b + btn('btn-outline-primary', 'Resultado', `loadResultado(${v.id})`);
+        });
         document.getElementById('resultadoVotacao').innerHTML = '';
     } catch (e) { showAlert(e.message, 'danger'); }
+}
+async function openVotacao() {
+    let reun = []; try { reun = rows(await apiGet('/api/v1/reunioes?size=100')); } catch (e) {}
+    const reunOpts = reun.map(r => ({ value: r.id, label: `Reunião #${r.id} — ${r.data}${r.local ? ' (' + r.local + ')' : ''}` }));
+    openModal('Nova votação',
+        selectField('reuniaoId', 'Reunião', reunOpts.length ? reunOpts : [{ value: '', label: '(sem reuniões)' }])
+        + field('tema', 'Tema', 'text', 'required')
+        + selectField('tipoMaioria', 'Maioria exigida', [{ value: 'MAIORIA_SIMPLES', label: 'Maioria simples (>50% presente)' }, { value: 'SEM_OPOSICAO', label: 'Sem oposição' }, { value: 'DOIS_TERCOS', label: 'Dois terços do capital' }, { value: 'UNANIMIDADE', label: 'Unanimidade' }]),
+        async () => { const d = formData(); if (!d.reuniaoId) throw new Error('Escolha uma reunião.'); await apiPost('/api/v1/votacoes', { reuniaoId: Number(d.reuniaoId), tema: d.tema, tipoMaioria: d.tipoMaioria }); showAlert('Votação criada.', 'success'); loadVotacoes(); });
+}
+async function abrirVotacao(id) { try { await apiPost(`/api/v1/votacoes/${id}/abrir`); showAlert('Votação aberta — pode receber votos.', 'success'); loadVotacoes(); } catch (e) { showAlert(e.message, 'danger'); } }
+async function encerrarVotacao(id) { if (!confirm('Encerrar a votação? Deixa de aceitar votos.')) return; try { await apiPost(`/api/v1/votacoes/${id}/encerrar`); showAlert('Votação encerrada.', 'success'); loadVotacoes(); loadResultado(id); } catch (e) { showAlert(e.message, 'danger'); } }
+async function condominosDoCondominio(condominioId) {
+    const fr = rows(await apiGet(`/api/v1/fracoes?condominioId=${condominioId}&size=100`));
+    const listas = await Promise.all(fr.map(f => apiGet(`/api/v1/condominos?fracaoId=${f.id}&size=100`).then(rows).then(cs => cs.map(c => ({ ...c, _fr: f.numero }))).catch(() => [])));
+    return listas.flat();
+}
+async function votarVotacao(id) {
+    const v = cache.votacoes.find(x => x.id === id);
+    let condos = [];
+    try { const reuniao = await apiGet(`/api/v1/reunioes/${v.reuniaoId}`); condos = await condominosDoCondominio(reuniao.condominioId); } catch (e) {}
+    const condOpts = condos.map(c => ({ value: c.id, label: `${c.nome}${c._fr ? ' · Fr ' + c._fr : ''}` }));
+    openModal('Registar voto — ' + (v.tema || ''),
+        selectField('condominoId', 'Condómino', condOpts.length ? condOpts : [{ value: '', label: '(sem condóminos)' }])
+        + selectField('resposta', 'Sentido do voto', [{ value: 'SIM', label: 'A favor (SIM)' }, { value: 'NAO', label: 'Contra (NÃO)' }, { value: 'ABSTENCAO', label: 'Abstenção' }]),
+        async () => { const d = formData(); if (!d.condominoId) throw new Error('Escolha um condómino.'); await apiPost(`/api/v1/votacoes/${id}/votos`, { condominoId: Number(d.condominoId), resposta: d.resposta }); showAlert('Voto registado.', 'success'); loadResultado(id); },
+        'O voto conta por <strong>permilagem</strong> da fração (Lei 8/2022). Cada condómino vota uma vez.');
 }
 async function loadResultado(id) {
     try {
@@ -748,7 +803,15 @@ function anexarAta(id) {
 }
 async function apagarAta(id) { if (!confirm('Apagar esta ata?')) return; try { await apiDel('/api/v1/atas/' + id); showAlert('Ata apagada.', 'success'); cache.atas = (cache.atas || []).filter(a => a.id !== id); renderAtas(); } catch (e) { showAlert(e.message, 'danger'); } }
 
-document.getElementById('modalForm').addEventListener('submit', async (e) => { e.preventDefault(); const err = document.getElementById('modalError'); err.classList.add('d-none'); try { await onSubmitModal(); modal().hide(); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); } });
+document.getElementById('modalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('modalError'); err.classList.add('d-none');
+    const sb = document.querySelector('#modalForm button[type=submit]'); const txt = sb ? sb.textContent : '';
+    if (sb) { sb.disabled = true; sb.textContent = 'A processar…'; }
+    try { await onSubmitModal(); modal().hide(); }
+    catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); }
+    finally { if (sb) { sb.disabled = false; sb.textContent = txt; } }
+});
 
 async function loadHealth() { const b = document.getElementById('healthBadge'); try { const d = await (await fetch('/api/v1/health')).json(); b.className = 'badge bg-success'; b.textContent = 'serviço: ' + (d.status || 'UP'); } catch { b.className = 'badge bg-danger'; b.textContent = 'serviço: indisponível'; } }
 
