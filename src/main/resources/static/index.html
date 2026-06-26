@@ -67,6 +67,17 @@
       #cmProgress::before { content: ''; position: absolute; height: 100%; width: 40%; left: -40%;
           background: linear-gradient(90deg, transparent, #0d6efd, #20c997, transparent); animation: cmSlide 1.05s ease-in-out infinite; }
       @keyframes cmSlide { 0% { left: -40%; } 100% { left: 100%; } }
+
+      /* ---------- Responsivo / mobile ---------- */
+      @media (max-width: 576px) {
+        .nav-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .nav-tabs .nav-link { white-space: nowrap; padding: .4rem .6rem; }
+        .container, main.container { padding-left: .7rem; padding-right: .7rem; }
+        .btn-group.btn-group-sm .btn, .btn-sm { font-size: .78rem; }
+        .navbar .navbar-brand { font-size: 1.05rem; }
+        body::before { background-attachment: scroll; }
+        h2.h5 { font-size: 1.05rem; }
+      }
     </style>
 </head>
 <body class="bg-body-tertiary">
@@ -353,6 +364,20 @@ function logout() {
     sessionStorage.clear(); document.getElementById('appView').classList.add('d-none'); document.getElementById('loginView').classList.remove('d-none');
     document.body.dataset.bg = 'login';
     ['logoutBtn','pwdBtn','userBadge'].forEach(id => document.getElementById(id).classList.add('d-none'));
+    clearTimeout(window._expWarn); clearTimeout(window._expLogout);
+}
+// Aviso + auto-logout antes de o token JWT expirar (validade ~1h).
+function scheduleSessionExpiry() {
+    try {
+        const t = token(); if (!t) return;
+        const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (!payload.exp) return;
+        const msLeft = payload.exp * 1000 - Date.now();
+        clearTimeout(window._expWarn); clearTimeout(window._expLogout);
+        if (msLeft <= 0) { logout(); return; }
+        if (msLeft > 120000) window._expWarn = setTimeout(() => showAlert('A sua sessão expira dentro de 2 minutos.', 'warning'), msLeft - 120000);
+        window._expLogout = setTimeout(() => { showAlert('Sessão expirada — entre novamente.', 'warning'); logout(); }, msLeft);
+    } catch (e) {}
 }
 function activateTab(name) {
     document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
@@ -365,6 +390,7 @@ async function showApp() {
     document.getElementById('loginView').classList.add('d-none'); document.getElementById('appView').classList.remove('d-none');
     document.getElementById('logoutBtn').classList.remove('d-none'); document.getElementById('pwdBtn').classList.remove('d-none');
     const badge = document.getElementById('userBadge'); badge.textContent = `${u.nome || ''} · ${(u.perfis || []).join(', ')}`; badge.classList.remove('d-none');
+    scheduleSessionExpiry();
     document.getElementById('navUtilizadores').classList.toggle('d-none', !canManageUsers());
     document.getElementById('navPermissoes').classList.toggle('d-none', !canManageUsers());
     document.getElementById('navAuditoria').classList.toggle('d-none', !canManageUsers());

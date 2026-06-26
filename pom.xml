@@ -43,6 +43,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Documentação da API: OpenAPI 3 + Swagger UI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.6.0</version>
+        </dependency>
+
         <!-- Relatórios: JasperReports (TECH_STACK.md) -->
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
