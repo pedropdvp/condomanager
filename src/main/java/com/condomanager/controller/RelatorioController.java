@@ -1,5 +1,6 @@
 package com.condomanager.controller;
 
+import com.condomanager.dto.BalanceteResponse;
 import com.condomanager.report.RelatorioService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -62,6 +63,18 @@ public class RelatorioController {
     @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
     public ResponseEntity<byte[]> ocorrenciasExcel(@RequestParam Long condominioId) {
         return xlsx(service.relatorioOcorrenciasXlsx(condominioId), "ocorrencias", condominioId);
+    }
+
+    @GetMapping("/balancete")
+    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    public BalanceteResponse balancete(@RequestParam Long condominioId) {
+        return service.balancete(condominioId);
+    }
+
+    @GetMapping("/balancete/pdf")
+    @PreAuthorize("hasAnyRole('GESTOR_EMPRESA', 'FUNCIONARIO', 'ADMIN_CONDOMINIO')")
+    public ResponseEntity<byte[]> balancetePdf(@RequestParam Long condominioId) {
+        return pdf(service.balancetePdf(condominioId), "balancete", condominioId);
     }
 
     private ResponseEntity<byte[]> pdf(byte[] body, String nome, Long condominioId) {

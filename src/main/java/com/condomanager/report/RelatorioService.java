@@ -1,9 +1,12 @@
 package com.condomanager.report;
 
+import com.condomanager.dto.BalanceteResponse;
 import com.condomanager.exception.ResourceNotFoundException;
 import com.condomanager.exception.StorageException;
 import com.condomanager.model.Condominio;
 import com.condomanager.model.Despesa;
+import com.condomanager.model.EstadoDespesa;
+import com.condomanager.model.EstadoQuota;
 import com.condomanager.model.Ocorrencia;
 import com.condomanager.model.Quota;
 import com.condomanager.repository.CondominioRepository;
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +162,55 @@ public class RelatorioService {
                 o.getPrioridade() != null ? o.getPrioridade().name() : "",
                 o.getEstado() != null ? o.getEstado().name() : "",
                 nz(o.getDescricao()));
+    }
+
+    // ---------- Balancete / Tesouraria ----------
+
+    @Transactional(readOnly = true)
+    public BalanceteResponse balancete(Long condominioId) {
+        Condominio c = condominioDoTenant(condominioId);
+        List<Quota> quotas = quotaRepository.findByFracao_Condominio_Id(condominioId);
+        BigDecimal totalQuotas = somaQuotas(quotas, null);
+        BigDecimal pagas = somaQuotas(quotas, EstadoQuota.PAGO);
+        BigDecimal porCobrar = somaQuotas(quotas, EstadoQuota.PENDENTE).add(somaQuotas(quotas, EstadoQuota.ATRASADO));
+        List<Despesa> despesas = despesaRepository.findByCondominio_Id(condominioId, Pageable.unpaged()).getContent();
+        BigDecimal despAprov = somaDespesas(despesas, EstadoDespesa.APROVADA);
+        BigDecimal despPend = somaDespesas(despesas, EstadoDespesa.PENDENTE);
+        BigDecimal saldo = pagas.subtract(despAprov);
+        BigDecimal fundoReserva = totalQuotas.multiply(new BigDecimal("0.10")).setScale(2, java.math.RoundingMode.HALF_UP);
+        return new BalanceteResponse(condominioId, c.getNome(), c.getOrcamentoAnual(),
+                totalQuotas, pagas, porCobrar, despAprov, despPend, saldo, fundoReserva);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] balancetePdf(Long condominioId) {
+        BalanceteResponse b = balancete(condominioId);
+        List<RelatorioGenericoRow> linhas = List.of(
+                linhaBalancete("Orçamento anual", b.orcamentoAnual()),
+                linhaBalancete("Receitas — quotas pagas", b.quotasPagas()),
+                linhaBalancete("Quotas por cobrar (pendentes/atraso)", b.quotasPorCobrar()),
+                linhaBalancete("Despesas aprovadas", b.despesasAprovadas()),
+                linhaBalancete("Despesas pendentes", b.despesasPendentes()),
+                linhaBalancete("SALDO (pagas - despesas aprovadas)", b.saldo()),
+                linhaBalancete("Fundo de reserva (>=10% das quotas)", b.fundoReserva()));
+        return toPdf(preencherGenerico("Balancete — " + b.condominioNome(),
+                new String[]{"Rubrica", "Valor (€)", "", "", ""}, linhas), "balancete");
+    }
+
+    private RelatorioGenericoRow linhaBalancete(String rubrica, BigDecimal valor) {
+        return new RelatorioGenericoRow(rubrica, valor != null ? valor.toPlainString() : "0", "", "", "");
+    }
+
+    private BigDecimal somaQuotas(List<Quota> quotas, EstadoQuota estado) {
+        return quotas.stream().filter(q -> estado == null || q.getEstado() == estado)
+                .map(Quota::getValor).filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal somaDespesas(List<Despesa> despesas, EstadoDespesa estado) {
+        return despesas.stream().filter(d -> estado == null || d.getEstado() == estado)
+                .map(Despesa::getValor).filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // ---------- Infraestrutura comum ----------

@@ -512,6 +512,7 @@ function verCondominio(id) {
           <button class="btn btn-outline-primary" onclick="loadReunioes()">Reuniões</button>
           <button class="btn btn-outline-primary" onclick="loadDocumentos()">Documentos</button>
           <button class="btn btn-outline-primary" onclick="loadOcorrencias()">Ocorrências</button>
+          <button class="btn btn-outline-warning" onclick="loadBalancete()">Balancete</button>
           <button class="btn btn-outline-success" onclick="baixar('pdf')">PDF</button>
           <button class="btn btn-outline-success" onclick="baixar('excel')">Excel</button>
         </div>
@@ -602,6 +603,27 @@ function baixar(fmt) {
     const name = `relatorio-quotas-${currentCond.id}.${isPdf ? 'pdf' : 'xlsx'}`;
     const mime = isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     return downloadComPicker(path, name, mime, 'Relatório guardado.');
+}
+async function loadBalancete() {
+    try {
+        const b = await apiGet(`/api/v1/relatorios/balancete?condominioId=${currentCond.id}`);
+        const eur = v => Number(v || 0).toFixed(2) + ' €';
+        const linha = (rot, val, cls = '') => `<tr class="${cls}"><th class="fw-normal">${rot}</th><td class="text-end">${eur(val)}</td></tr>`;
+        const tabela = `<div class="card"><div class="card-body">
+            <table class="table table-sm w-auto mb-2">
+              ${linha('Orçamento anual', b.orcamentoAnual)}
+              ${linha('Receitas — quotas pagas', b.quotasPagas, 'table-success')}
+              ${linha('Quotas por cobrar (pendentes/atraso)', b.quotasPorCobrar)}
+              ${linha('Despesas aprovadas', b.despesasAprovadas, 'table-danger')}
+              ${linha('Despesas pendentes', b.despesasPendentes)}
+              ${linha('Saldo (pagas − despesas aprovadas)', b.saldo, Number(b.saldo) >= 0 ? 'table-success' : 'table-danger')}
+              ${linha('Fundo de reserva (≥10% das quotas)', b.fundoReserva, 'table-info')}
+            </table>
+            <p class="small text-secondary mb-2">Fundo de reserva obrigatório (≥10% das quotas) — Lei 8/2022.</p>
+            ${btn('btn-outline-success', '⬇ Balancete em PDF', `downloadComPicker('/api/v1/relatorios/balancete/pdf?condominioId=${currentCond.id}','balancete-${currentCond.id}.pdf','application/pdf','Balancete guardado.')`)}
+          </div></div>`;
+        subView('Balancete — ' + esc(currentCond.nome), '', tabela);
+    } catch (e) { showAlert(e.message, 'danger'); }
 }
 // Relatórios por tipo (despesas, ocorrencias) em PDF/Excel.
 function baixarRelatorio(tipo, fmt) {

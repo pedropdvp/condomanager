@@ -1,5 +1,6 @@
 package com.condomanager.report;
 
+import com.condomanager.dto.BalanceteResponse;
 import com.condomanager.exception.ResourceNotFoundException;
 import com.condomanager.model.Condominio;
 import com.condomanager.model.EstadoQuota;
@@ -101,5 +102,23 @@ class RelatorioServiceTest {
 
         assertThat(pdf).isNotEmpty();
         assertThat(new String(pdf, 0, 4)).isEqualTo("%PDF");
+    }
+
+    @Test
+    void balanceteCalculaSaldoEFundoReserva() {
+        Condominio c = new Condominio();
+        c.setId(1L);
+        c.setIdEmpresa(2L);
+        c.setNome("Residencial Alfa");
+        c.setOrcamentoAnual(new BigDecimal("1200.00"));
+        when(condominioRepository.findByIdAndIdEmpresa(1L, 2L)).thenReturn(Optional.of(c));
+        when(quotaRepository.findByFracao_Condominio_Id(1L)).thenReturn(List.of(quota())); // PAGO 170.00
+        when(despesaRepository.findByCondominio_Id(eq(1L), any())).thenReturn(Page.empty());
+
+        BalanceteResponse b = service.balancete(1L);
+
+        assertThat(b.quotasPagas()).isEqualByComparingTo("170.00");
+        assertThat(b.fundoReserva()).isEqualByComparingTo("17.00"); // 10% de 170
+        assertThat(b.saldo()).isEqualByComparingTo("170.00");
     }
 }
