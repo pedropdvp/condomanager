@@ -89,7 +89,7 @@
         <div class="d-flex align-items-center gap-2">
             <span id="userBadge" class="navbar-text text-light small d-none"></span>
             <button id="pwdBtn" class="btn btn-outline-light btn-sm d-none" type="button" onclick="openAlterarPassword()">Alterar password</button>
-            <a href="/landing.html" class="btn btn-outline-light btn-sm">Página inicial</a>
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="irParaInicio()">Página inicial</button>
             <button id="themeToggle" class="btn btn-outline-light btn-sm" type="button">🌓</button>
             <button id="logoutBtn" class="btn btn-light btn-sm d-none" type="button">Sair</button>
         </div>
@@ -395,6 +395,13 @@ function activateTab(name) {
     ['dashboard','condominios','votacoes','mensagens','utilizadores','permissoes','auditoria','empresas'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
     const bgMap = { mensagens: 'utilizadores', auditoria: 'permissoes', empresas: 'condominios' };
     document.body.dataset.bg = bgMap[name] || name; // fundo temático por menu
+}
+// Botão "Página inicial": com sessão vai para o Dashboard (admin → Utilizadores) sem
+// recarregar a página; sem sessão vai para a página comercial.
+function irParaInicio() {
+    if (!token()) { location.href = '/landing.html'; return; }
+    if (isAdmin()) { activateTab('utilizadores'); loadUtilizadores(); }
+    else { activateTab('dashboard'); loadDashboard(); }
 }
 async function showApp() {
     const u = user();
