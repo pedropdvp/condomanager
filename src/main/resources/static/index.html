@@ -48,6 +48,18 @@
       .form-control, .form-select { border-radius: 10px; }
       .modal-content { border: none; border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,.32); }
       .table thead th { font-weight: 600; letter-spacing: -.01em; }
+
+      /* ---------- Fundos temáticos por menu (imagem + overlay de leitura) ---------- */
+      :root { --cm-veil: linear-gradient(rgba(248,250,252,.86), rgba(243,246,250,.92)); }
+      [data-bs-theme="dark"] { --cm-veil: linear-gradient(rgba(9,11,17,.82), rgba(11,14,20,.89)); }
+      body::before { content:''; position:fixed; inset:0; z-index:-2; background-size:cover; background-position:center; background-repeat:no-repeat; transform:scale(1.06); filter:blur(3px); transition:opacity .4s ease; }
+      body::after  { content:''; position:fixed; inset:0; z-index:-1; background:var(--cm-veil); }
+      body[data-bg="login"]::before        { background-image:url('/img/bg-login.jpg'); }
+      body[data-bg="dashboard"]::before    { background-image:url('/img/bg-dashboard.jpg'); }
+      body[data-bg="condominios"]::before  { background-image:url('/img/bg-condominios.jpg'); }
+      body[data-bg="votacoes"]::before     { background-image:url('/img/bg-votacoes.jpg'); }
+      body[data-bg="utilizadores"]::before { background-image:url('/img/bg-utilizadores.jpg'); }
+      body[data-bg="permissoes"]::before   { background-image:url('/img/bg-permissoes.jpg'); }
     </style>
 </head>
 <body class="bg-body-tertiary">
@@ -289,11 +301,13 @@ async function doLogin(email, password) {
 }
 function logout() {
     sessionStorage.clear(); document.getElementById('appView').classList.add('d-none'); document.getElementById('loginView').classList.remove('d-none');
+    document.body.dataset.bg = 'login';
     ['logoutBtn','pwdBtn','userBadge'].forEach(id => document.getElementById(id).classList.add('d-none'));
 }
 function activateTab(name) {
     document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
     ['dashboard','condominios','votacoes','utilizadores','permissoes'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
+    document.body.dataset.bg = name; // fundo temático por menu
 }
 async function showApp() {
     const u = user();
@@ -635,6 +649,7 @@ document.getElementById('themeToggle').addEventListener('click', () => {
     if (currentCond && document.getElementById('chartPermilagem')) loadFracoes();
 });
 
+document.body.dataset.bg = 'login';
 loadHealth();
 if (token()) showApp();
 </script>
