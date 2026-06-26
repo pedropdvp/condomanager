@@ -6,6 +6,8 @@ import com.condomanager.model.EstadoQuota;
 import com.condomanager.model.Fracao;
 import com.condomanager.model.Quota;
 import com.condomanager.repository.CondominioRepository;
+import com.condomanager.repository.DespesaRepository;
+import com.condomanager.repository.OcorrenciaRepository;
 import com.condomanager.repository.QuotaRepository;
 import com.condomanager.security.TenantContext;
 import org.junit.jupiter.api.AfterEach;
@@ -21,8 +23,12 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,12 +37,14 @@ class RelatorioServiceTest {
 
     @Mock private CondominioRepository condominioRepository;
     @Mock private QuotaRepository quotaRepository;
+    @Mock private DespesaRepository despesaRepository;
+    @Mock private OcorrenciaRepository ocorrenciaRepository;
 
     private RelatorioService service;
 
     @BeforeEach
     void setUp() {
-        service = new RelatorioService(condominioRepository, quotaRepository);
+        service = new RelatorioService(condominioRepository, quotaRepository, despesaRepository, ocorrenciaRepository);
         TenantContext.setTenantId(2L);
     }
 
@@ -77,6 +85,21 @@ class RelatorioServiceTest {
 
         assertThat(pdf).isNotEmpty();
         // Assinatura de um ficheiro PDF: "%PDF"
+        assertThat(new String(pdf, 0, 4)).isEqualTo("%PDF");
+    }
+
+    @Test
+    void geraPdfDespesasComTemplateGenerico() {
+        Condominio c = new Condominio();
+        c.setId(1L);
+        c.setIdEmpresa(2L);
+        c.setNome("Residencial Alfa");
+        when(condominioRepository.findByIdAndIdEmpresa(1L, 2L)).thenReturn(Optional.of(c));
+        when(despesaRepository.findByCondominio_Id(eq(1L), any())).thenReturn(Page.empty());
+
+        byte[] pdf = service.relatorioDespesasPdf(1L);
+
+        assertThat(pdf).isNotEmpty();
         assertThat(new String(pdf, 0, 4)).isEqualTo("%PDF");
     }
 }
