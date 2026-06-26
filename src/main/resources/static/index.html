@@ -150,8 +150,10 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h5 mb-0">Condomínios</h2>
                 <div><button id="btnNovoCond" class="btn btn-sm btn-success" onclick="openCondominio()">➕ Novo condomínio</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV(cache.cond, 'condominios')">⬇ CSV</button>
                     <button class="btn btn-sm btn-outline-primary" onclick="loadCondominios()">↻</button></div>
             </div>
+            <input id="condSearch" class="form-control form-control-sm mb-2" placeholder="Pesquisar por nome ou morada…" oninput="renderCondominios()">
             <div id="condominiosTable" class="table-responsive"></div>
             <div id="detalhe" class="mt-4"></div>
         </div>
@@ -204,7 +206,8 @@
         <div id="tab-auditoria" class="d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h5 mb-0">Auditoria <span class="text-secondary small">· histórico de operações (imutável)</span></h2>
-                <button class="btn btn-sm btn-outline-primary" onclick="loadAuditoria()">↻ Atualizar</button>
+                <div><button class="btn btn-sm btn-outline-secondary" onclick="exportarCSV(cache.audit, 'auditoria')">⬇ CSV</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadAuditoria()">↻ Atualizar</button></div>
             </div>
             <div id="auditoriaTable" class="table-responsive"></div>
         </div>
@@ -352,6 +355,14 @@ async function downloadComPicker(path, suggestedName, mime, successMsg) {
     } catch (e) { showAlert(e.message, 'danger'); }
 }
 function downloadFile(path, filename) { return downloadComPicker(path, filename || 'ficheiro', 'application/octet-stream'); }
+// Exporta um array de objetos para CSV (UTF-8 com BOM, abre bem no Excel).
+function exportarCSV(linhas, nome) {
+    if (!linhas || !linhas.length) { showAlert('Nada para exportar.', 'info'); return; }
+    const keys = Object.keys(linhas[0]).filter(k => !['idEmpresa', 'createdAt', 'updatedAt'].includes(k));
+    const cel = v => '"' + String(v === null || v === undefined ? '' : (Array.isArray(v) ? v.join('; ') : v)).replace(/"/g, '""') + '"';
+    const csv = [keys.join(',')].concat(linhas.map(o => keys.map(k => cel(o[k])).join(','))).join('\r\n');
+    anchorDownload(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), (nome || 'dados') + '.csv');
+}
 function esc(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 function btn(cls, label, onclick) { return `<button class="btn btn-sm ${cls}" onclick="${onclick}">${label}</button> `; }
 
@@ -460,12 +471,17 @@ async function loadCondominios() {
     document.getElementById('btnNovoCond').classList.toggle('d-none', !can('CONDOMINIOS','CRIAR'));
     try {
         cache.cond = rows(await apiGet('/api/v1/condominios?size=50'));
-        document.getElementById('condominiosTable').innerHTML = table(cache.cond, c =>
-            btn('btn-primary','Visualizar',`verCondominio(${c.id})`) +
-            (can('CONDOMINIOS','EDITAR') ? btn('btn-outline-secondary','Editar',`editCondominio(${c.id})`) : '') +
-            (can('CONDOMINIOS','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarCondominio(${c.id})`) : ''));
+        renderCondominios();
         document.getElementById('detalhe').innerHTML = '';
     } catch (e) { showAlert(e.message, 'danger'); }
+}
+function renderCondominios() {
+    const q = (document.getElementById('condSearch')?.value || '').toLowerCase();
+    const items = cache.cond.filter(c => !q || (c.nome || '').toLowerCase().includes(q) || (c.morada || '').toLowerCase().includes(q));
+    document.getElementById('condominiosTable').innerHTML = table(items, c =>
+        btn('btn-primary','Visualizar',`verCondominio(${c.id})`) +
+        (can('CONDOMINIOS','EDITAR') ? btn('btn-outline-secondary','Editar',`editCondominio(${c.id})`) : '') +
+        (can('CONDOMINIOS','APAGAR') ? btn('btn-outline-danger','Apagar',`apagarCondominio(${c.id})`) : ''));
 }
 function verCondominio(id) {
     const c = cache.cond.find(x => x.id === id); currentCond = { id, nome: c.nome };

@@ -1,0 +1,13 @@
+{
+  "name": "condomanager-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Smoke tests E2E (Playwright) do CondoManager",
+  "scripts": {
+    "test": "node smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.0"
+  }
+}
