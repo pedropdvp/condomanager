@@ -76,6 +76,9 @@ management:
       show-details: when-authorized
       probes:
         enabled: true
+  health:
+    mail:
+      enabled: false   # o indicador de mail tenta ligar a SMTP (bloqueado no Render) e pendura o /health
   info:
     env:
       enabled: true
