@@ -283,6 +283,15 @@ let currentCond = null, onSubmitModal = null;
 const cache = { cond: [], frac: [], quotas: [], users: [], edif: [], desp: [], reun: [], cond_o: [], docs: [], atas: [], ocor: [], msgs: [], votacoes: [], audit: [], empresas: [] };
 let currentReuniaoId = null;
 let msgBox = 'recebidas';
+let msgPage = 0, msgTotalPaginas = 1, msgTotal = 0;
+// Controlo de paginação server-side reutilizável (‹ Anterior · página X de Y · Próximo ›).
+function paginadorHtml(page, totalPaginas, total, loaderName) {
+    if (!totalPaginas || totalPaginas <= 1) return '';
+    return `<nav class="d-flex align-items-center gap-2 mt-2">
+        <button class="btn btn-sm btn-outline-secondary" ${page <= 0 ? 'disabled' : ''} onclick="${loaderName}(${page - 1})">‹ Anterior</button>
+        <span class="small text-secondary">Página ${page + 1} de ${totalPaginas} · ${total} registos</span>
+        <button class="btn btn-sm btn-outline-secondary" ${page >= totalPaginas - 1 ? 'disabled' : ''} onclick="${loaderName}(${page + 1})">Próximo ›</button></nav>`;
+}
 
 const PERFIS_ALL = [
     { value: 'CONDOMINO', label: 'Condómino' }, { value: 'ADMIN_CONDOMINIO', label: 'Administrador de Condomínio' },
@@ -978,7 +987,7 @@ function setMsgBox(box) {
     msgBox = box;
     document.getElementById('msgboxRecebidas').classList.toggle('active', box === 'recebidas');
     document.getElementById('msgboxEnviadas').classList.toggle('active', box === 'enviadas');
-    loadMensagens();
+    loadMensagens(0);
 }
 function renderMensagens() {
     const recebidas = msgBox !== 'enviadas';
@@ -987,11 +996,15 @@ function renderMensagens() {
         Tipo: `<span class="badge text-bg-${TIPO_MSG_BADGE[m.tipo] || 'secondary'}">${m.tipo}</span>`,
         De: m.origemNome || '—',
         Data: m.dataEnvio ? String(m.dataEnvio).replace('T', ' ').slice(0, 16) : '—' }));
-    document.getElementById('mensagensTable').innerHTML = table(linhas, l => btn('btn-outline-primary', 'Abrir', `abrirMensagem(${l.id})`));
+    document.getElementById('mensagensTable').innerHTML =
+        table(linhas, l => btn('btn-outline-primary', 'Abrir', `abrirMensagem(${l.id})`))
+        + paginadorHtml(msgPage, msgTotalPaginas, msgTotal, 'loadMensagens');
 }
-async function loadMensagens() {
+async function loadMensagens(page = 0) {
     const recebidas = msgBox !== 'enviadas';
-    cache.msgs = rows(await apiGet((recebidas ? '/api/v1/mensagens/recebidas' : '/api/v1/mensagens/enviadas') + '?size=50'));
+    const p = await apiGet((recebidas ? '/api/v1/mensagens/recebidas' : '/api/v1/mensagens/enviadas') + `?page=${page}&size=15`);
+    cache.msgs = p.conteudo || p.content || [];
+    msgPage = p.pagina ?? page; msgTotalPaginas = p.totalPaginas ?? 1; msgTotal = p.totalElementos ?? cache.msgs.length;
     renderMensagens();
 }
 async function abrirMensagem(id) {
@@ -999,7 +1012,7 @@ async function abrirMensagem(id) {
     const corpo = `<div class="small text-secondary mb-2">De: ${m.origemNome || '—'} · ${m.dataEnvio ? String(m.dataEnvio).replace('T', ' ').slice(0, 16) : ''}</div><div style="white-space:pre-wrap">${m.conteudo || ''}</div>`;
     openModal(m.assunto || 'Mensagem', corpo, async () => {}, '', true);
     if (msgBox !== 'enviadas' && !m.lida) {
-        try { await apiPut('/api/v1/mensagens/' + id + '/lida'); m.lida = true; atualizarBadgeMensagens(); loadMensagens(); } catch (e) {}
+        try { await apiPut('/api/v1/mensagens/' + id + '/lida'); m.lida = true; atualizarBadgeMensagens(); loadMensagens(msgPage); } catch (e) {}
     }
 }
 async function openMensagem() {
@@ -1013,13 +1026,12 @@ async function openMensagem() {
         async () => { const d = formData(); const body = { tipo: d.tipo, assunto: d.assunto, conteudo: d.conteudo };
             if (d.tipo === 'INDIVIDUAL') { if (!d.destinoId) throw new Error('Escolha um destinatário.'); body.destinoId = Number(d.destinoId); }
             const nova = await apiPost('/api/v1/mensagens', body); showAlert('Mensagem enviada.', 'success');
-            // Mostrar em "Enviadas" garantindo que a nova mensagem aparece (imune a read-after-write).
+            // Mostrar a 1.ª página de "Enviadas" garantindo que a nova mensagem aparece (imune a read-after-write).
             msgBox = 'enviadas';
             document.getElementById('msgboxRecebidas').classList.remove('active');
             document.getElementById('msgboxEnviadas').classList.add('active');
-            let lista = []; try { lista = rows(await apiGet('/api/v1/mensagens/enviadas?size=50')); } catch (e) {}
-            cache.msgs = [nova, ...lista.filter(x => x.id !== nova.id)];
-            renderMensagens(); });
+            await loadMensagens(0);
+            if (!cache.msgs.some(x => x.id === nova.id)) { cache.msgs = [nova, ...cache.msgs]; renderMensagens(); } });
     const sel = document.querySelector('#modalForm [name=tipo]');
     if (sel) sel.addEventListener('change', e => { document.getElementById('destWrap').style.display = e.target.value === 'INDIVIDUAL' ? '' : 'none'; });
 }
