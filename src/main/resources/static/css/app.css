@@ -68,12 +68,12 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title {
   margin: 20px auto;
   max-width: 1200px;
   width: calc(100% - 40px);
-  border-radius: 24px;
+  border-radius: 50px;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   background-color: rgba(10, 10, 10, 0.75) !important;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 10px 28px;
+  padding: 10px 36px 10px 28px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1050;
@@ -196,7 +196,11 @@ body[data-bg="login"] .navbar {
   color: #000 !important;
   border: none !important;
   font-weight: 600;
+  border-radius: 30px !important;
+  padding: 6px 16px !important;
+  font-size: 0.82rem !important;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 .btn-nav-control:hover {
   background: rgba(255, 255, 255, 0.9) !important;
@@ -212,14 +216,21 @@ body[data-bg="login"] .navbar {
 
 #userBadge {
   margin-top: 4px;
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.55) !important;
   padding: 0;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 [data-bs-theme="light"] #userBadge {
   color: rgba(0, 0, 0, 0.55) !important;
+}
+
+.brand-icon {
+  color: #fff;
+}
+[data-bs-theme="light"] .brand-icon {
+  color: #000;
 }
 
 /* ---------- Sleek Glassmorphism Cards & Layout ---------- */

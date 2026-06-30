@@ -176,7 +176,7 @@ async function showApp() {
     document.getElementById('loginView').classList.add('d-none'); document.getElementById('appView').classList.remove('d-none');
     document.getElementById('logoutBtn').classList.remove('d-none'); document.getElementById('pwdBtn').classList.remove('d-none');
     document.getElementById('navbarMenuContainer').classList.remove('d-none');
-    const badge = document.getElementById('userBadge'); badge.textContent = `${u.nome || ''} · ${(u.perfis || []).join(', ')}`; badge.classList.remove('d-none');
+    const badge = document.getElementById('userBadge'); badge.innerHTML = `${u.nome || ''} ·<br>${(u.perfis || []).join(', ')}`; badge.classList.remove('d-none');
     scheduleSessionExpiry();
     document.getElementById('navUtilizadores').classList.toggle('d-none', !canManageUsers());
     document.getElementById('navPermissoes').classList.toggle('d-none', !canManageUsers());
