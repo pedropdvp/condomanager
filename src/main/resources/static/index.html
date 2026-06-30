@@ -15,16 +15,19 @@
 
 <nav class="navbar navbar-expand-lg border border-opacity-10 shadow-lg" data-bs-theme="dark">
     <div class="container-fluid">
-        <a class="navbar-brand mb-0 h1" href="#" onclick="irParaInicio(); return false;">🏢 CondoManager</a>
+        <div class="d-flex flex-column align-items-start">
+            <a class="navbar-brand mb-0 h1" href="#" onclick="irParaInicio(); return false;">🏢 CondoManager</a>
+            <span id="userBadge" class="navbar-text text-light small d-none" style="margin-top: -6px; font-size: 0.72rem; padding: 0; line-height: 1.1; opacity: 0.6;"></span>
+        </div>
         
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
-            <!-- Center navigation pills (hidden by default) -->
-            <div id="navbarMenuContainer" class="d-none mx-auto my-2 my-lg-0">
-                <ul class="nav nav-pills gap-1" id="navbarTabs">
+            <!-- Center/Right navigation pills (hidden by default) -->
+            <div id="navbarMenuContainer" class="d-none ms-auto me-lg-3 my-2 my-lg-0">
+                <ul class="nav nav-pills gap-1 flex-nowrap" id="navbarTabs">
                     <li class="nav-item"><button class="nav-link active" data-tab="dashboard">📊 Dashboard</button></li>
                     <li class="nav-item"><button class="nav-link" data-tab="condominios">🏢 Condomínios</button></li>
                     <li class="nav-item"><button class="nav-link" data-tab="votacoes">🗳️ Votações</button></li>
@@ -37,22 +40,27 @@
             </div>
 
             <!-- Utility buttons (always visible or dynamically loaded) next to the menu -->
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2 ms-auto mt-2 mt-lg-0">
-                <span id="userBadge" class="navbar-text text-light small d-none me-2"></span>
-                <button id="pwdBtn" class="btn btn-outline-light btn-sm d-none" type="button" onclick="openAlterarPassword()">A minha conta</button>
-                <button type="button" class="btn btn-outline-light btn-sm" onclick="irParaInicio()">Página inicial</button>
-                <button id="themeToggle" class="btn btn-outline-light btn-sm" type="button">🌓</button>
-                <div class="dropdown d-inline-block">
-                    <button id="langBtn" class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        🌐 PT
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a id="langPT" class="dropdown-item active" href="#" onclick="changeLanguage('PT'); return false;">PT</a></li>
-                        <li><a id="langEN" class="dropdown-item" href="#" onclick="changeLanguage('EN'); return false;">EN</a></li>
-                        <li><a id="langFR" class="dropdown-item" href="#" onclick="changeLanguage('FR'); return false;">FR</a></li>
-                    </ul>
+            <div class="d-flex flex-column gap-1 align-items-end ms-lg-2 mt-2 mt-lg-0" style="min-width: 220px;">
+                <!-- Row 1: Conta and Início -->
+                <div class="d-flex gap-1 justify-content-end w-100">
+                    <button id="pwdBtn" class="btn btn-nav-control btn-sm d-none flex-fill" type="button" onclick="openAlterarPassword()">Conta</button>
+                    <button id="inicioBtn" class="btn btn-nav-control btn-sm flex-fill" type="button" onclick="irParaInicio()">Início</button>
                 </div>
-                <button id="logoutBtn" class="btn btn-light btn-sm d-none" type="button">Sair</button>
+                <!-- Row 2: Mode, Lang, Sair -->
+                <div class="d-flex gap-1 justify-content-end w-100">
+                    <button id="themeToggle" class="btn btn-nav-control btn-sm flex-fill" type="button">🌓</button>
+                    <div class="dropdown d-inline-block flex-fill">
+                        <button id="langBtn" class="btn btn-nav-control btn-sm dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            🌐 PT
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a id="langPT" class="dropdown-item active" href="#" onclick="changeLanguage('PT'); return false;">PT</a></li>
+                            <li><a id="langEN" class="dropdown-item" href="#" onclick="changeLanguage('EN'); return false;">EN</a></li>
+                            <li><a id="langFR" class="dropdown-item" href="#" onclick="changeLanguage('FR'); return false;">FR</a></li>
+                        </ul>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-nav-control btn-sm d-none flex-fill" type="button">Sair</button>
+                </div>
             </div>
         </div>
     </div>

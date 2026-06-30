@@ -92,6 +92,14 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title {
   padding: 4px;
   border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#navbarTabs::-webkit-scrollbar {
+  display: none;
 }
 [data-bs-theme="light"] #navbarTabs {
   background: rgba(0, 0, 0, 0.03);
@@ -178,22 +186,36 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title {
   transform: translateY(-1px);
 }
 
-/* Specific logout button styling */
-#logoutBtn {
+/* Specific navigation control buttons styling */
+.btn-nav-control {
   background: #fff !important;
   color: #000 !important;
   border: none !important;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
-#logoutBtn:hover {
+.btn-nav-control:hover {
   background: rgba(255, 255, 255, 0.9) !important;
   transform: translateY(-1px);
 }
-[data-bs-theme="light"] #logoutBtn {
+[data-bs-theme="light"] .btn-nav-control {
   background: #000 !important;
   color: #fff !important;
 }
-[data-bs-theme="light"] #logoutBtn:hover {
+[data-bs-theme="light"] .btn-nav-control:hover {
   background: rgba(0, 0, 0, 0.85) !important;
+}
+
+#userBadge {
+  margin-top: -4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55) !important;
+  padding: 0;
+  line-height: 1.1;
+}
+[data-bs-theme="light"] #userBadge {
+  color: rgba(0, 0, 0, 0.55) !important;
 }
 
 /* ---------- Sleek Glassmorphism Cards & Layout ---------- */
