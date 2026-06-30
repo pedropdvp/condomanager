@@ -21,6 +21,16 @@
             <button id="pwdBtn" class="btn btn-outline-light btn-sm d-none" type="button" onclick="openAlterarPassword()">A minha conta</button>
             <button type="button" class="btn btn-outline-light btn-sm" onclick="irParaInicio()">Página inicial</button>
             <button id="themeToggle" class="btn btn-outline-light btn-sm" type="button">🌓</button>
+            <div class="dropdown d-inline-block">
+                <button id="langBtn" class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    🌐 PT
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a id="langPT" class="dropdown-item active" href="#" onclick="changeLanguage('PT'); return false;">PT</a></li>
+                    <li><a id="langEN" class="dropdown-item" href="#" onclick="changeLanguage('EN'); return false;">EN</a></li>
+                    <li><a id="langFR" class="dropdown-item" href="#" onclick="changeLanguage('FR'); return false;">FR</a></li>
+                </ul>
+            </div>
             <button id="logoutBtn" class="btn btn-light btn-sm d-none" type="button">Sair</button>
         </div>
     </div>
@@ -158,6 +168,22 @@
             </div>
             <input id="empSearch" class="form-control form-control-sm mb-2" placeholder="Pesquisar por nome, NIF ou email…" oninput="renderEmpresas()">
             <div id="empresasTable" class="table-responsive"></div>
+        </div>
+    </section>
+
+    <section id="underConstructionView" class="d-none">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 text-center">
+                <div class="card shadow-sm border-warning py-5 my-4">
+                    <div class="card-body">
+                        <div class="fs-1 text-warning mb-3">⚠️</div>
+                        <h2 class="h4 card-title mb-4">Under Construction</h2>
+                        <p class="lead mb-2">EN -> Under Construction.</p>
+                        <p class="lead mb-4">FR. Under Construction.</p>
+                        <button class="btn btn-primary btn-sm" onclick="changeLanguage('PT')">Voltar / Return / Retour</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </main>

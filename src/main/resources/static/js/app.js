@@ -143,6 +143,7 @@ function logout() {
     document.body.dataset.bg = 'login';
     ['logoutBtn','pwdBtn','userBadge'].forEach(id => document.getElementById(id).classList.add('d-none'));
     clearTimeout(window._expWarn); clearTimeout(window._expLogout);
+    changeLanguage('PT');
 }
 // Aviso + auto-logout antes de o token JWT expirar (validade ~1h).
 function scheduleSessionExpiry() {
@@ -830,6 +831,37 @@ document.getElementById('themeToggle').addEventListener('click', () => {
     if (active === 'dashboard') loadDashboard();
     if (currentCond && document.getElementById('chartPermilagem')) loadFracoes();
 });
+
+function changeLanguage(lang) {
+    const btn = document.getElementById('langBtn');
+    if (btn) {
+        btn.innerHTML = `🌐 ${lang}`;
+    }
+    ['PT', 'EN', 'FR'].forEach(l => {
+        const item = document.getElementById(`lang${l}`);
+        if (item) {
+            item.classList.toggle('active', l === lang);
+        }
+    });
+
+    const underConst = document.getElementById('underConstructionView');
+    const appView = document.getElementById('appView');
+    const loginView = document.getElementById('loginView');
+
+    if (lang === 'EN' || lang === 'FR') {
+        if (appView) appView.classList.add('d-none');
+        if (loginView) loginView.classList.add('d-none');
+        if (underConst) underConst.classList.remove('d-none');
+    } else {
+        if (underConst) underConst.classList.add('d-none');
+        if (token()) {
+            if (appView) appView.classList.remove('d-none');
+        } else {
+            if (loginView) loginView.classList.remove('d-none');
+        }
+    }
+}
+window.changeLanguage = changeLanguage;
 
 document.body.dataset.bg = 'login';
 loadHealth();
