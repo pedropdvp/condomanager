@@ -10,6 +10,9 @@ const user = () => JSON.parse(sessionStorage.getItem('cm_user') || '{}');
 const isAdmin = () => (user().perfis || []).includes('ROLE_ADMIN_SISTEMA');
 const isGestor = () => (user().perfis || []).includes('ROLE_GESTOR_EMPRESA');
 const canManageUsers = () => isAdmin() || isGestor();
+const isCondomino = () => (user().perfis || []).includes('ROLE_CONDOMINO');
+const temPapelGestao = () => (user().perfis || []).some(p => ['ROLE_GESTOR_EMPRESA', 'ROLE_ADMIN_SISTEMA', 'ROLE_FUNCIONARIO', 'ROLE_ADMIN_CONDOMINIO'].includes(p));
+const isCondominoPuro = () => isCondomino() && !temPapelGestao();
 const PALETTE = ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#20c997','#fd7e14'];
 // Permissões efetivas (granular). Módulos fora desta lista são RBAC por papel -> can()=true.
 let myPerms = {};
@@ -160,8 +163,8 @@ function scheduleSessionExpiry() {
 }
 function activateTab(name) {
     document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
-    ['dashboard','condominios','votacoes','mensagens','utilizadores','permissoes','auditoria','empresas'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
-    const bgMap = { mensagens: 'utilizadores', auditoria: 'permissoes', empresas: 'condominios' };
+    ['dashboard','condominios','votacoes','mensagens','utilizadores','permissoes','auditoria','empresas','portal'].forEach(t => document.getElementById('tab-' + t).classList.toggle('d-none', t !== name));
+    const bgMap = { mensagens: 'utilizadores', auditoria: 'permissoes', empresas: 'condominios', portal: 'dashboard' };
     document.body.dataset.bg = bgMap[name] || name; // fundo temático por menu
 }
 // Botão "Página inicial": com sessão vai para o Dashboard (admin → Utilizadores) sem
@@ -186,11 +189,16 @@ async function showApp() {
     const verMsgs = !isAdmin() && can('MENSAGENS', 'CONSULTAR');
     document.getElementById('navMensagens').classList.toggle('d-none', !verMsgs);
     if (verMsgs) atualizarBadgeMensagens();
+    const condoPuro = isCondominoPuro();
+    document.getElementById('navPortal').classList.toggle('d-none', !condoPuro);
+    ['navDashboard', 'navCondominios', 'navVotacoes'].forEach(id => document.getElementById(id).classList.toggle('d-none', condoPuro));
     const ab = document.getElementById('adminBanner');
     if (isAdmin()) {
         ab.classList.remove('d-none');
         ab.innerHTML = '👤 <strong>Administrador de plataforma.</strong> Gere <strong>Utilizadores</strong> e <strong>Permissões</strong> (os dados de condomínios devolvem 403 para esta conta).';
         activateTab('utilizadores'); loadUtilizadores();
+    } else if (condoPuro) {
+        ab.classList.add('d-none'); activateTab('portal'); loadPortal();
     } else { ab.classList.add('d-none'); activateTab('dashboard'); loadDashboard(); }
 }
 
@@ -649,9 +657,50 @@ async function pagarOnline(quotaId) {
                <tr><th>Valor</th><td>${Number(r.valor).toFixed(2)} €</td></tr></table>
              <p class="small text-secondary mb-2">${r.instrucoes}</p>
              <div class="alert alert-warning small mb-0">${r.nota}</div>`,
-            async () => { await apiPost(`/api/v1/pagamentos/online/confirmar?quotaId=${quotaId}`); showAlert('Pagamento confirmado.', 'success'); recarregar(loadQuotas); },
+            async () => { await apiPost(`/api/v1/pagamentos/online/confirmar?quotaId=${quotaId}`); showAlert('Pagamento confirmado.', 'success'); recarregarVistaPagamentos(); },
             'Carregue em «Guardar» para simular a confirmação do pagamento (callback do gateway).');
     } catch (e) { showAlert(e.message, 'danger'); }
+}
+// Recarrega a vista de quotas certa (gestor: loadQuotas; portal do condómino: loadPortal).
+function recarregarVistaPagamentos() {
+    const ativo = document.querySelector('.nav-link.active')?.dataset.tab;
+    if (ativo === 'portal') { loadPortal(); } else { recarregar(loadQuotas); }
+}
+// ---------- Portal do Condómino (self-service) ----------
+async function loadPortal() {
+    const cont = document.getElementById('portalConteudo');
+    cont.innerHTML = '<p class="text-secondary">A carregar a sua área…</p>';
+    try {
+        const ctx = await apiGet('/api/v1/me/contexto');
+        const quotas = await apiGet('/api/v1/me/quotas');
+        let votacoes = [];
+        try { votacoes = rows(await apiGet('/api/v1/votacoes?size=50')).filter(v => v.estado === 'ABERTA'); } catch (e) {}
+        const eur = v => Number(v || 0).toFixed(2) + ' €';
+        const qBadge = { PENDENTE: 'warning', PAGO: 'success', ATRASADO: 'danger', ANULADO: 'secondary' };
+        const quotasHtml = quotas.length
+            ? '<table class="table table-sm align-middle"><thead><tr><th>Mês/Ano</th><th>Valor</th><th>Estado</th><th class="text-end">Ações</th></tr></thead><tbody>'
+              + quotas.map(q => `<tr><td>${q.mes}/${q.ano}</td><td>${eur(q.valor)}</td><td><span class="badge text-bg-${qBadge[q.estado] || 'secondary'}">${q.estado}</span></td><td class="text-end">${['PENDENTE', 'ATRASADO'].includes(q.estado) ? btn('btn-outline-success', 'Pagar online', `pagarOnline(${q.id})`) : '—'}</td></tr>`).join('')
+              + '</tbody></table>'
+            : '<p class="text-secondary mb-0">Sem quotas registadas.</p>';
+        const votHtml = votacoes.length
+            ? votacoes.map(v => `<div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2"><div><strong>${v.tema}</strong> <span class="small text-secondary">· ${String(v.tipoMaioria).replace(/_/g, ' ')}</span></div>${btn('btn-success', 'Votar', `votarPortal(${v.id})`)}</div>`).join('')
+            : '<p class="text-secondary mb-0">Sem votações abertas de momento.</p>';
+        cont.innerHTML = `
+            <div class="card mb-3"><div class="card-body">
+                <h2 class="h5 mb-1">A minha área — ${ctx.condominoNome}</h2>
+                <p class="text-secondary mb-0">${ctx.condominioNome} · Fração ${ctx.fracaoNumero}</p>
+            </div></div>
+            <div class="card mb-3"><div class="card-body"><h3 class="h6 mb-3">As minhas quotas</h3>${quotasHtml}</div></div>
+            <div class="card"><div class="card-body"><h3 class="h6 mb-3">Votações abertas</h3>${votHtml}</div></div>`;
+    } catch (e) {
+        cont.innerHTML = `<div class="alert alert-warning">Não foi possível carregar a sua área: ${e.message}<br><span class="small">A conta tem de estar associada a um condómino.</span></div>`;
+    }
+}
+function votarPortal(votacaoId) {
+    openModal('Votar',
+        selectField('resposta', 'Sentido do voto', [{ value: 'SIM', label: 'A favor (SIM)' }, { value: 'NAO', label: 'Contra (NÃO)' }, { value: 'ABSTENCAO', label: 'Abstenção' }]),
+        async () => { const d = formData(); await apiPost(`/api/v1/votacoes/${votacaoId}/votar`, { resposta: d.resposta }); showAlert('Voto registado.', 'success'); loadPortal(); },
+        'O seu voto conta pela permilagem da sua fração (Lei 8/2022). Cada condómino vota uma vez.');
 }
 function openAlterarPassword() {
     openModal('A minha conta',
@@ -823,7 +872,7 @@ async function loadHealth() { const b = document.getElementById('healthBadge'); 
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => { e.preventDefault(); const err = document.getElementById('loginError'); err.classList.add('d-none'); const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.textContent = 'A entrar…'; try { await doLogin(document.getElementById('email').value, document.getElementById('password').value); } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); } finally { btn.disabled = false; btn.textContent = 'Entrar'; } });
 document.getElementById('logoutBtn').addEventListener('click', logout);
-document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { const tab = b.dataset.tab; activateTab(tab); if (tab === 'utilizadores') { loadUtilizadores(); return; } if (tab === 'permissoes') { loadPermPerfis(); return; } if (tab === 'auditoria') { loadAuditoria(); return; } if (tab === 'empresas') { loadEmpresas(); return; } if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores, Permissões, Auditoria e Empresas.', 'info'); return; } if (tab === 'dashboard') loadDashboard(); if (tab === 'condominios') loadCondominios(); if (tab === 'votacoes') loadVotacoes(); if (tab === 'mensagens') loadMensagens(); }));
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { const tab = b.dataset.tab; activateTab(tab); if (tab === 'utilizadores') { loadUtilizadores(); return; } if (tab === 'permissoes') { loadPermPerfis(); return; } if (tab === 'auditoria') { loadAuditoria(); return; } if (tab === 'empresas') { loadEmpresas(); return; } if (tab === 'portal') { loadPortal(); return; } if (isAdmin()) { showAlert('Conta de admin: gere Utilizadores, Permissões, Auditoria e Empresas.', 'info'); return; } if (tab === 'dashboard') loadDashboard(); if (tab === 'condominios') loadCondominios(); if (tab === 'votacoes') loadVotacoes(); if (tab === 'mensagens') loadMensagens(); }));
 const themeSaved = localStorage.getItem('theme'); if (themeSaved) document.documentElement.dataset.bsTheme = themeSaved;
 document.getElementById('themeToggle').addEventListener('click', () => {
     const h = document.documentElement; h.dataset.bsTheme = h.dataset.bsTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', h.dataset.bsTheme);

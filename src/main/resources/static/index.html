@@ -33,9 +33,10 @@
             <!-- Center/Right navigation pills (hidden by default) -->
             <div id="navbarMenuContainer" class="d-none ms-auto me-lg-3 my-2 my-lg-0">
                 <ul class="nav nav-pills gap-1 flex-nowrap" id="navbarTabs">
-                    <li class="nav-item"><button class="nav-link active" data-tab="dashboard">📊 Dashboard</button></li>
-                    <li class="nav-item"><button class="nav-link" data-tab="condominios">🏢 Condomínios</button></li>
-                    <li class="nav-item"><button class="nav-link" data-tab="votacoes">🗳️ Votações</button></li>
+                    <li class="nav-item d-none" id="navPortal"><button class="nav-link" data-tab="portal">🏠 A minha área</button></li>
+                    <li class="nav-item" id="navDashboard"><button class="nav-link active" data-tab="dashboard">📊 Dashboard</button></li>
+                    <li class="nav-item" id="navCondominios"><button class="nav-link" data-tab="condominios">🏢 Condomínios</button></li>
+                    <li class="nav-item" id="navVotacoes"><button class="nav-link" data-tab="votacoes">🗳️ Votações</button></li>
                     <li class="nav-item d-none" id="navMensagens"><button class="nav-link" data-tab="mensagens">✉️ Mensagens <span id="msgBadge" class="badge text-bg-danger rounded-pill d-none">0</span></button></li>
                     <li class="nav-item d-none" id="navUtilizadores"><button class="nav-link" data-tab="utilizadores">👥 Utilizadores</button></li>
                     <li class="nav-item d-none" id="navPermissoes"><button class="nav-link" data-tab="permissoes">🔐 Permissões</button></li>
@@ -193,6 +194,10 @@
             </div>
             <input id="empSearch" class="form-control form-control-sm mb-2" placeholder="Pesquisar por nome, NIF ou email…" oninput="renderEmpresas()">
             <div id="empresasTable" class="table-responsive"></div>
+        </div>
+
+        <div id="tab-portal" class="d-none">
+            <div id="portalConteudo"></div>
         </div>
     </section>
 
