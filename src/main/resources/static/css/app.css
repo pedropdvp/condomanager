@@ -68,7 +68,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title {
   margin: 20px auto;
   max-width: 1200px;
   width: calc(100% - 40px);
-  border-radius: 50px;
+  border-radius: 24px;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   background-color: rgba(10, 10, 10, 0.75) !important;
@@ -77,6 +77,10 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1050;
+}
+
+body[data-bg="login"] .navbar {
+  max-width: 480px;
 }
 
 [data-bs-theme="light"] .navbar {
@@ -207,7 +211,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title {
 }
 
 #userBadge {
-  margin-top: -4px;
+  margin-top: 4px;
   font-size: 0.72rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.55) !important;
