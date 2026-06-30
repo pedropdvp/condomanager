@@ -141,7 +141,7 @@ async function doLogin(email, password) {
 function logout() {
     sessionStorage.clear(); document.getElementById('appView').classList.add('d-none'); document.getElementById('loginView').classList.remove('d-none');
     document.body.dataset.bg = 'login';
-    ['logoutBtn','pwdBtn','userBadge'].forEach(id => document.getElementById(id).classList.add('d-none'));
+    ['logoutBtn','pwdBtn','userBadge','navbarMenuContainer'].forEach(id => document.getElementById(id).classList.add('d-none'));
     clearTimeout(window._expWarn); clearTimeout(window._expLogout);
     changeLanguage('PT');
 }
@@ -175,6 +175,7 @@ async function showApp() {
     const u = user();
     document.getElementById('loginView').classList.add('d-none'); document.getElementById('appView').classList.remove('d-none');
     document.getElementById('logoutBtn').classList.remove('d-none'); document.getElementById('pwdBtn').classList.remove('d-none');
+    document.getElementById('navbarMenuContainer').classList.remove('d-none');
     const badge = document.getElementById('userBadge'); badge.textContent = `${u.nome || ''} · ${(u.perfis || []).join(', ')}`; badge.classList.remove('d-none');
     scheduleSessionExpiry();
     document.getElementById('navUtilizadores').classList.toggle('d-none', !canManageUsers());
