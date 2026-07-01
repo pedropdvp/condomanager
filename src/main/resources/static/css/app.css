@@ -194,6 +194,13 @@ body[data-bg="login"] .navbar > .container {
   font-size: 0.82rem;
 }
 
+/* Botão de ativar/desativar da lista de Utilizadores: largura fixa para que
+   "Ativar" e "Desativar" ocupem o mesmo espaço e as ações (Editar/Condómino/…)
+   fiquem alinhadas em coluna entre linhas (a célula é alinhada à direita). */
+.btn-toggle-ativo {
+  min-width: 88px;
+}
+
 .btn-primary {
   background: linear-gradient(135deg, #FF7A00 0%, #FF5C00 100%) !important;
   color: #fff !important;

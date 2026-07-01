@@ -530,7 +530,7 @@ function renderUtilizadores() {
     const items = cache.users.filter(u => !q || (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.perfis || []).join(',').toLowerCase().includes(q));
     document.getElementById('utilizadoresTable').innerHTML = table(items, u => btn('btn-outline-secondary','Editar',`editUtilizador(${u.id})`) +
         btn('btn-outline-info','Condómino',`associarUtilizadorCondomino(${u.id})`) +
-        (u.ativo ? btn('btn-outline-danger','Desativar',`toggleAtivoUtilizador(${u.id},false)`) : btn('btn-outline-success','Ativar',`toggleAtivoUtilizador(${u.id},true)`)));
+        (u.ativo ? btn('btn-outline-danger btn-toggle-ativo','Desativar',`toggleAtivoUtilizador(${u.id},false)`) : btn('btn-outline-success btn-toggle-ativo','Ativar',`toggleAtivoUtilizador(${u.id},true)`)));
 }
 async function associarUtilizadorCondomino(id) {
     let conds = []; try { conds = rows(await apiGet('/api/v1/condominios?size=100')); } catch (e) {}
