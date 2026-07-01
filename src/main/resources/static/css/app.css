@@ -95,6 +95,10 @@ body[data-bg="login"] .navbar > .container {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 }
 
+/* Deixa a barra de tabs encolher/scrollar para os botões utilitários caberem
+   dentro da largura da .container (evita overflow à direita). */
+#navbarMenuContainer { min-width: 0; }
+
 /* Menu pills */
 #navbarTabs {
   border: none;
