@@ -154,6 +154,13 @@ public class VotacaoService {
         };
     }
 
+    @Transactional
+    public void eliminar(Long id) {
+        Votacao votacao = obterDoTenant(id);
+        votoRepository.deleteAll(votoRepository.findByVotacao_Id(id));
+        repository.delete(votacao);
+    }
+
     Votacao obterDoTenant(Long id) {
         return repository.findByIdAndIdEmpresa(id, tenantObrigatorio())
                 .orElseThrow(() -> new ResourceNotFoundException(RECURSO, id));

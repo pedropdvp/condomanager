@@ -39,7 +39,9 @@ check('ata criada aparece logo na lista', ataOk);
 // Ocorrência: criar
 const ocorOk = await page.evaluate(async () => {
   const r = await apiPost('/api/v1/ocorrencias', { condominioId: currentCond.id, titulo: 'SMOKE-OC', descricao: 'x', prioridade: 'ALTA' });
-  return !!r.id && r.estado === 'ABERTA';
+  const ok = !!r.id && r.estado === 'ABERTA';
+  try { await apiDel('/api/v1/ocorrencias/' + r.id); } catch {}
+  return ok;
 });
 check('criar ocorrência (estado ABERTA)', ocorOk);
 
@@ -53,12 +55,14 @@ const votOk = await page.evaluate(async () => {
   const cs = (await apiGet('/api/v1/condominos?fracaoId=' + fr[0].id + '&size=5')).conteudo;
   await apiPost('/api/v1/votacoes/' + v.id + '/votos', { condominoId: cs[0].id, resposta: 'SIM' });
   const res = await apiGet('/api/v1/votacoes/' + v.id + '/resultado');
-  return Number(res.somaSim) > 0 && res.numeroVotos === 1;
+  const ok = Number(res.somaSim) > 0 && res.numeroVotos === 1;
+  try { await apiDel('/api/v1/votacoes/' + v.id); } catch {}
+  return ok;
 });
 check('votação criar→abrir→votar→resultado', votOk);
 
 // Mensagem broadcast
-const msgOk = await page.evaluate(async () => !!(await apiPost('/api/v1/mensagens', { tipo: 'BROADCAST', assunto: 'SMOKE', conteudo: 'x' })).id);
+const msgOk = await page.evaluate(async () => { const m = await apiPost('/api/v1/mensagens', { tipo: 'BROADCAST', assunto: 'SMOKE', conteudo: 'x' }); const ok = !!m.id; try { await apiDel('/api/v1/mensagens/' + m.id); } catch {} return ok; });
 check('enviar mensagem broadcast', msgOk);
 
 // Relatórios (PDF + Excel) válidos

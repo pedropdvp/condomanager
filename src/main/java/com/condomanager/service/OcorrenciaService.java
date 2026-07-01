@@ -134,6 +134,12 @@ public class OcorrenciaService {
         return mapper.toResponse(o);
     }
 
+    @Transactional
+    public void eliminar(Long id) {
+        repository.delete(obterDoTenant(id));
+        logger.info("Ocorrência eliminada: id={}", id);
+    }
+
     private Ocorrencia obterDoTenant(Long id) {
         return repository.findByIdAndIdEmpresa(id, tenantObrigatorio())
                 .orElseThrow(() -> new ResourceNotFoundException(RECURSO, id));

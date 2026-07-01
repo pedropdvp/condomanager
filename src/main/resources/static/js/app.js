@@ -421,7 +421,7 @@ function renderVotacoes() {
         if (v.estado === 'CRIADA' && podeEditar) b += btn('btn-outline-success', 'Abrir', `abrirVotacao(${v.id})`);
         if (v.estado === 'ABERTA' && podeCriar) b += btn('btn-success', 'Votar', `votarVotacao(${v.id})`);
         if (v.estado === 'ABERTA' && podeEditar) b += btn('btn-outline-warning', 'Encerrar', `encerrarVotacao(${v.id})`);
-        return b + btn('btn-outline-primary', 'Resultado', `loadResultado(${v.id})`);
+        return b + btn('btn-outline-primary', 'Resultado', `loadResultado(${v.id})`) + (podeEditar ? btn('btn-outline-danger', 'Apagar', `apagarVotacao(${v.id})`) : '');
     });
 }
 async function openVotacao() {
@@ -702,6 +702,9 @@ function votarPortal(votacaoId) {
         async () => { const d = formData(); await apiPost(`/api/v1/votacoes/${votacaoId}/votar`, { resposta: d.resposta }); showAlert('Voto registado.', 'success'); loadPortal(); },
         'O seu voto conta pela permilagem da sua fração (Lei 8/2022). Cada condómino vota uma vez.');
 }
+async function apagarVotacao(id) { if (!confirm('Apagar esta votação (e os seus votos)?')) return; try { await apiDel('/api/v1/votacoes/' + id); showAlert('Votação apagada.', 'success'); recarregar(loadVotacoes); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarOcorrencia(id) { if (!confirm('Apagar esta ocorrência?')) return; try { await apiDel('/api/v1/ocorrencias/' + id); showAlert('Ocorrência apagada.', 'success'); cache.ocor = (cache.ocor || []).filter(o => o.id !== id); renderOcorrencias(); } catch (e) { showAlert(e.message, 'danger'); } }
+async function apagarMensagem(id) { if (!confirm('Apagar esta mensagem enviada?')) return; try { await apiDel('/api/v1/mensagens/' + id); showAlert('Mensagem apagada.', 'success'); loadMensagens(msgPage); } catch (e) { showAlert(e.message, 'danger'); } }
 function openAlterarPassword() {
     openModal('A minha conta',
         field('novaPassword', 'Nova password (6–72 caracteres)', 'password', 'minlength="6" required')
@@ -753,7 +756,7 @@ function renderOcorrencias() {
         Estado: `<span class="badge text-bg-${OCOR_BADGE[o.estado] || 'secondary'}">${String(o.estado).replace('_', ' ')}</span>` }));
     subView('Ocorrências', btn('btn-success', '➕ Nova ocorrência', 'openOcorrencia()') + btn('btn-outline-success','PDF',"baixarRelatorio('ocorrencias','pdf')") + btn('btn-outline-success','Excel',"baixarRelatorio('ocorrencias','excel')"),
         table(linhas, o => podeGerirOcorrencias()
-            ? btn('btn-outline-secondary', 'Estado', `estadoOcorrencia(${o.id})`) + btn('btn-outline-info', 'Atribuir', `atribuirOcorrencia(${o.id})`) + btn('btn-outline-secondary', 'Editar', `editOcorrencia(${o.id})`)
+            ? btn('btn-outline-secondary', 'Estado', `estadoOcorrencia(${o.id})`) + btn('btn-outline-info', 'Atribuir', `atribuirOcorrencia(${o.id})`) + btn('btn-outline-secondary', 'Editar', `editOcorrencia(${o.id})`) + btn('btn-outline-danger', 'Apagar', `apagarOcorrencia(${o.id})`)
             : '<span class="small text-secondary">—</span>'));
 }
 async function loadOcorrencias() {
@@ -797,7 +800,7 @@ function renderMensagens() {
         De: m.origemNome || '—',
         Data: m.dataEnvio ? String(m.dataEnvio).replace('T', ' ').slice(0, 16) : '—' }));
     document.getElementById('mensagensTable').innerHTML =
-        table(linhas, l => btn('btn-outline-primary', 'Abrir', `abrirMensagem(${l.id})`))
+        table(linhas, l => btn('btn-outline-primary', 'Abrir', `abrirMensagem(${l.id})`) + (msgBox === 'enviadas' ? btn('btn-outline-danger', 'Apagar', `apagarMensagem(${l.id})`) : ''))
         + paginadorHtml(msgPage, msgTotalPaginas, msgTotal, 'loadMensagens');
 }
 async function loadMensagens(page = 0) {

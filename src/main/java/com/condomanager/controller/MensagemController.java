@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -70,5 +71,12 @@ public class MensagemController {
     @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CONSULTAR')")
     public Map<String, Long> naoLidas() {
         return Map.of("naoLidas", service.contarNaoLidas());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@permissaoService.pode('MENSAGENS', 'CRIAR')")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        service.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }

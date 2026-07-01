@@ -130,6 +130,18 @@ public class MensagemService {
         return repository.countByDestino_IdAndLidaFalse(utilizadorAtualId());
     }
 
+    /** Apaga uma mensagem — só o remetente pode apagar as que enviou. */
+    @Transactional
+    public void eliminar(Long id) {
+        Long uid = utilizadorAtualId();
+        Mensagem mensagem = repository.findByIdAndIdEmpresa(id, tenantObrigatorio())
+                .orElseThrow(() -> new ResourceNotFoundException(RECURSO, id));
+        if (mensagem.getOrigem() == null || !uid.equals(mensagem.getOrigem().getId())) {
+            throw new AccessDeniedException("Só pode apagar as mensagens que enviou.");
+        }
+        repository.delete(mensagem);
+    }
+
     private Long utilizadorAtualId() {
         return SecurityUtils.utilizadorAtual()
                 .map(AuthenticatedUser::id)
