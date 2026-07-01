@@ -22,6 +22,13 @@ Java 21 · Spring Boot 3 · MySQL/TiDB · Frontend SPA (Bootstrap 5 + Chart.js).
 | **Administrador** | `admin@condomanager.local` | `admin123` | Utilizadores, Permissões, Auditoria, Empresas |
 | **Condómino** | `portal.demo@demo.local` | `portal123` | Portal self-service (as minhas quotas, votar) |
 
+## 📸 Vista geral
+
+![Dashboard do CondoManager em tema escuro — KPIs do condomínio e gráficos de estrutura, quotas por estado/valor e ocorrências](docs/img/dashboard.png)
+
+> Dashboard do gestor (tema escuro): KPIs do condomínio e gráficos interativos
+> (estrutura, quotas por estado e por valor, ocorrências por estado).
+
 ## ✨ Funcionalidades
 
 **Gestão do condomínio**
