@@ -95,9 +95,17 @@ body[data-bg="login"] .navbar > .container {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 }
 
-/* Deixa a barra de tabs encolher/scrollar para os botões utilitários caberem
-   dentro da largura da .container (evita overflow à direita). */
+/* Layout do menu (lg+): separadores encostados à esquerda (a seguir ao logo) e
+   botões utilitários no topo-direita. O contentor dos separadores cresce para
+   preencher o espaço (empurra os utilitários para a direita) e a "pill" interna
+   (#navbarTabs) usa width:max-content — encosta ao conteúdo e só faz scroll
+   horizontal quando não há espaço. Sem auto-margins (que colapsavam a pill). */
+.navbar .navbar-collapse { min-width: 0; }
 #navbarMenuContainer { min-width: 0; }
+.navbar .d-flex.flex-column.align-items-end { flex-shrink: 0; }
+@media (min-width: 992px) {
+  #navbarMenuContainer { flex: 1 1 auto; }
+}
 
 /* Menu pills */
 #navbarTabs {
@@ -109,6 +117,8 @@ body[data-bg="login"] .navbar > .container {
   display: flex;
   flex-wrap: nowrap !important;
   white-space: nowrap;
+  width: max-content;
+  max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -146,6 +156,26 @@ body[data-bg="login"] .navbar > .container {
 [data-bs-theme="light"] #navbarTabs .nav-link:hover:not(.active) {
   background-color: rgba(0, 0, 0, 0.05);
   color: #000 !important;
+}
+
+/* Em ecrãs 992–1399px o container Bootstrap é mais estreito (960/1140) do que o
+   xxl (1320). Compactamos os separadores e botões utilitários para que os 7
+   separadores caibam na "pill" sem cortar nem precisar de scroll. */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+  .navbar > .container { padding-left: 14px; padding-right: 14px; }
+  #navbarTabs { padding: 2px; gap: 1px !important; }
+  #navbarTabs .nav-link { padding: 4px 6px; font-size: 0.7rem; }
+  .navbar .d-flex.flex-column.align-items-end { min-width: 0 !important; }
+  .btn-nav-control { padding: 5px 9px !important; font-size: 0.72rem !important; }
+  #navbarMenuContainer.me-lg-3 { margin-right: 0.35rem !important; }
+}
+
+/* A partir de 1400px o container Bootstrap fixa-se em 1320px (não cresce mais),
+   pelo que os 7 separadores em tamanho normal (~932px) não caberiam. Compactação
+   ligeira para caberem confortavelmente em qualquer ecrã grande. */
+@media (min-width: 1400px) {
+  #navbarTabs { gap: 2px !important; }
+  #navbarTabs .nav-link { padding: 5px 9px; font-size: 0.76rem; }
 }
 
 /* ---------- Buttons & Micro-interactions ---------- */
