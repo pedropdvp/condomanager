@@ -503,15 +503,26 @@ body[data-bg="permissoes"]::before   { background-image: url('/img/bg-permissoes
   }
 }
 
-/* Fix select option color contrast across the application under dark mode */
-[data-bs-theme="dark"] select.form-select option,
-[data-bs-theme="dark"] select option {
-  color: #6c757d !important; /* gray text for dropdown options */
-  background-color: #fff !important; /* white background for readability */
+/* Dropdowns nativos (<select>) legíveis em modo escuro.
+   No Chrome/Edge (Windows) o painel de opções é renderizado com o color-scheme
+   do elemento e o background-color das <option> é ignorado — daí o texto cinza
+   escuro ficar ilegível sobre o painel escuro nativo. Forçamos painel escuro e
+   texto claro: opções em cinza claro legível e a opção por defeito/selecionada
+   em branco. Regra global: cobre todas as dropdowns da aplicação. */
+[data-bs-theme="dark"] select,
+[data-bs-theme="dark"] select.form-select {
+  color-scheme: dark;
 }
+[data-bs-theme="dark"] select option,
+[data-bs-theme="dark"] select.form-select option {
+  color: #ced4da !important;            /* cinza claro — legível */
+  background-color: #1e1e1e !important; /* painel escuro */
+}
+[data-bs-theme="dark"] select option:checked,
+[data-bs-theme="dark"] select option[selected],
 [data-bs-theme="dark"] select.form-select option:checked,
-[data-bs-theme="dark"] select option:checked {
-  color: #000 !important; /* selected option is dark */
-  background-color: #f8f9fa !important;
+[data-bs-theme="dark"] select.form-select option[selected] {
+  color: #fff !important;               /* opção por defeito/selecionada a branco */
+  background-color: #2c2c2c !important;
 }
 
