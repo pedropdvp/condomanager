@@ -1,5 +1,7 @@
 # 🏢 CondoManager — Sistema de Gestão de Condomínios (SaaS)
 
+📖 **Idiomas:** Português · [English](README.en.md)
+
 Plataforma **SaaS multi-tenant** para a gestão de condomínios, alinhada com a
 **Lei 8/2022** (quotas por permilagem, quórum/maiorias, fundo de reserva).
 Java 21 · Spring Boot 3 · MySQL/TiDB · Frontend SPA (Bootstrap 5 + Chart.js).
@@ -28,6 +30,12 @@ Java 21 · Spring Boot 3 · MySQL/TiDB · Frontend SPA (Bootstrap 5 + Chart.js).
 
 > Dashboard do gestor (tema escuro): KPIs do condomínio e gráficos interativos
 > (estrutura, quotas por estado e por valor, ocorrências por estado).
+
+| Votações (contagem por permilagem) | Balancete / Tesouraria |
+|---|---|
+| [![Votações e resultado por permilagem](docs/img/votacoes.png)](docs/img/votacoes.png) | [![Balancete com fundo de reserva](docs/img/balancete.png)](docs/img/balancete.png) |
+| **Permissões — RBAC granular** | **Portal do Condómino** |
+| [![Matriz de permissões perfil × funcionalidade × ação](docs/img/permissoes.png)](docs/img/permissoes.png) | [![Portal self-service do condómino](docs/img/portal.png)](docs/img/portal.png) |
 
 ## ✨ Funcionalidades
 
