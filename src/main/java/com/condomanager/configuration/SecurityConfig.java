@@ -33,6 +33,7 @@ public class SecurityConfig {
             "/js/**",
             "/img/**",
             "/favicon.ico",
+            "/favicon.svg",
             "/error",
             "/api/v1/auth/**",
             "/api/v1/health",
