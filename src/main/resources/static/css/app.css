@@ -18,6 +18,10 @@
   --cm-veil: linear-gradient(135deg, rgba(248, 250, 252, 0.85) 0%, rgba(243, 246, 250, 0.92) 100%);
   --cm-card-bg: rgba(255, 255, 255, 0.75);
   --cm-card-border: rgba(0, 0, 0, 0.07);
+  /* Painel "app-shell" — modo claro: rebordo azul-escuro (navy) */
+  --cm-shell-bg: rgba(249, 250, 252, 0.92);
+  --cm-shell-border: #0a2a66;
+  --cm-shell-shadow: 0 0 0 1.5px rgba(10, 42, 102, 0.45), 0 24px 60px rgba(15, 30, 60, 0.32);
 }
 
 [data-bs-theme="dark"] {
@@ -31,6 +35,10 @@
   --cm-veil: linear-gradient(135deg, rgba(6, 6, 6, 0.82) 0%, rgba(10, 10, 10, 0.9) 100%);
   --cm-card-bg: rgba(18, 18, 18, 0.75);
   --cm-card-border: rgba(255, 255, 255, 0.08);
+  /* Painel "app-shell" — modo escuro: rebordo ciano luminoso */
+  --cm-shell-bg: rgba(11, 13, 18, 0.90);
+  --cm-shell-border: #38bdf8;
+  --cm-shell-shadow: 0 0 0 1px rgba(56, 189, 248, 0.30), 0 0 32px rgba(56, 189, 248, 0.16), 0 26px 60px rgba(0, 0, 0, 0.55);
 }
 
 /* ---------- Reset & Typography ---------- */
@@ -384,7 +392,10 @@ body[data-bg="login"] .navbar > .container {
   box-shadow: 0 30px 80px rgba(0,0,0,0.15);
 }
 
-/* ---------- Fundos temáticos por menu (fotos SGC originais + blur premium) ---------- */
+/* ---------- Fundos temáticos por menu (fotos em destaque, nítidas) ---------- */
+/* A foto ocupa todo o ecrã, nítida e vívida ("esplendor máximo"). O conteúdo
+   nunca assenta diretamente sobre a foto — vive dentro do painel .app-shell,
+   que a cobre e deixa uma margem de segurança à volta onde a foto aparece. */
 body::before {
   content: '';
   position: fixed;
@@ -393,20 +404,50 @@ body::before {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  transform: scale(1.03);
-  filter: blur(8px) brightness(0.95);
+  transform: scale(1.04);
+  filter: brightness(1.02) saturate(1.06);
   transition: opacity 0.5s ease-in-out;
 }
 [data-bs-theme="dark"] body::before {
-  filter: blur(8px) brightness(0.6);
+  filter: brightness(0.9) saturate(1.08);
 }
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: var(--cm-veil);
-  transition: background 0.3s ease;
+
+/* Painel de informação: envolve navbar + conteúdo, com cantos arredondados e
+   rebordo colorido (ciano no escuro, navy no claro). Fundo semitransparente
+   "fosco" para o conteúdo ser legível sem tapar a foto nas margens. */
+.app-shell {
+  position: relative;
+  width: min(1340px, calc(100% - 40px));
+  margin: 20px auto 32px;
+  border-radius: 28px;
+  border: 2px solid var(--cm-shell-border);
+  background: var(--cm-shell-bg);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  backdrop-filter: blur(22px) saturate(1.15);
+  box-shadow: var(--cm-shell-shadow);
+  padding: 0 16px 16px;
+}
+/* Modo claro: rebordo navy mais espesso para leitura clara sobre a foto */
+[data-bs-theme="light"] .app-shell { border-width: 3px; }
+/* Navbar integra-se no topo do painel (sem a "pill" própria) */
+.app-shell .navbar { padding: 14px 0 0; }
+.app-shell .navbar > .container {
+  max-width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+  padding: 4px 8px !important;
+}
+.app-shell main.container,
+.app-shell footer.container { max-width: 100%; }
+/* Login: painel compacto centrado sobre a foto */
+body[data-bg="login"] .app-shell { width: min(560px, calc(100% - 40px)); }
+
+@media (max-width: 991.98px) {
+  .app-shell { width: calc(100% - 24px); margin: 12px auto 20px; border-radius: 20px; padding: 0 10px 12px; }
 }
 
 body[data-bg="login"]::before        { background-image: url('/img/bg-login.jpg'); }
